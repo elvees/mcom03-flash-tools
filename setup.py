@@ -1,0 +1,24 @@
+# Copyright 2021 RnD Center "ELVEES", JSC
+
+import setuptools
+
+install_requires = [
+    "pyserial>=3.0,<4.0",
+]
+
+setuptools.setup(
+    name="mcom03-flash-tools",
+    version="1.0",
+    description="Tool to flash QSPI on MCom-03",
+    python_requires=">=3.6,<4.0",
+    packages=setuptools.find_packages(),
+    use_scm_version=True,
+    setup_requires=["setuptools_scm"],
+    install_requires=install_requires,
+    entry_points={
+        "console_scripts": [
+            "mcom03-flash = mcom03_flash_tools.mcom03_flash:main",
+            "mcom03-read-flash = mcom03_flash_tools.mcom03_read_flash:main",
+        ],
+    },
+)
