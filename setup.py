@@ -12,6 +12,8 @@ setuptools.setup(
     description="Tool to flash QSPI on MCom-03",
     python_requires=">=3.6,<4.0",
     packages=setuptools.find_packages(),
+    package_dir={"mcom03_flash_tools": "mcom03_flash_tools"},
+    package_data={"mcom03_flash_tools": ["spi-flasher-mips-ram.hex"]},
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
     install_requires=install_requires,

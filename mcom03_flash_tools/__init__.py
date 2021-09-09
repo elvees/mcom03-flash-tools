@@ -16,6 +16,7 @@ FLASH_LIST = [
     FlashType("S25FL128S", 16 * MiB, 64 * KiB, 256, [0x1, 0x20, 0x18, 0x4D, 0x1, 0x80]),
     FlashType("S25FL256S", 32 * MiB, 64 * KiB, 256, [0x1, 0x2, 0x19, 0x4D, 0x1, 0x80]),
 ]
+default_flasher = pkg_resources.resource_filename("mcom03_flash_tools", "spi-flasher-mips-ram.hex")
 
 try:
     __version__ = pkg_resources.get_distribution(__name__).version

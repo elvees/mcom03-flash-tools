@@ -8,6 +8,7 @@ import time
 from mcom03_flash_tools import (
     UART,
     __version__,
+    default_flasher,
     get_flash_type,
     read_image,
     upload_flasher,
@@ -19,7 +20,7 @@ __doc__ = """Tool to read QSPI0, QSPI1 memory connected to MCom-03 SoC (1892ВА
 * command flasher to read data from QSPI
 * receive data from flasher via UART
 
-Intel HEX file baremetal SPI flasher to be executed on RISC0 is required.
+Intel HEX file baremetal SPI flasher to be executed on RISC0 is embedded with the tool.
 """
 
 
@@ -48,7 +49,7 @@ def main():
     parser.add_argument(
         "-f",
         "--flasher",
-        default="spi-flasher-mips-ram.hex",
+        default=default_flasher,
         help="path to Intel HEX baremetal application to be executed on RISC0",
     )
     parser.add_argument("--version", action="version", version=__version__)

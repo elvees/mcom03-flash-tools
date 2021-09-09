@@ -12,6 +12,7 @@ from mcom03_flash_tools import (
     UART,
     __version__,
     clear_progress_bar,
+    default_flasher,
     get_flash_type,
     print_progress_bar,
     upload_flasher,
@@ -75,7 +76,7 @@ __doc__ = """Tool to flash QSPI0, QSPI1 memory connected to MCom-03 SoC (1892Ð’Ð
 * upload image to CRAM memory (or part of it) and command flasher to flash it
 * repeat previous step multiple time till whole image is flashed to SPI
 
-Intel HEX file baremetal SPI flasher to be executed on RISC0 is required.
+Intel HEX file baremetal SPI flasher to be executed on RISC0 is embedded with the tool.
 """
 
 
@@ -103,7 +104,7 @@ def main():
     parser.add_argument(
         "-f",
         "--flasher",
-        default="spi-flasher-mips-ram.hex",
+        default=default_flasher,
         help="path to Intel HEX baremetal application to be executed on RISC0",
     )
     parser.add_argument("--version", action="version", version=__version__)
