@@ -75,9 +75,14 @@
    .. note:: Если при запуске на модуле NGFW-CB будет выдано исключение из-за
       несовпадения CRC, возможно, после включения питания не была нажата кнопка *Power*.
 
+.. important: Для загрузки с QSPI0 установить переключатели *BOOT2,1,0* в положения:
+
+   * на модуле NGFW-CB: ON, ON, ON,
+   * на модуле MCom-03 BuB: OFF, OFF, OFF.
+
 Чтение QSPI0
 ============
 
 Для чтения образа используется mcom03-read-flash::
 
-  mcom03-read-flash 0 <output-file> --port /dev/ttyUSBx
+  mcom03-read-flash 0 <size-in-bytes> <output-file> --port /dev/ttyUSBx
