@@ -34,6 +34,7 @@ def main():
     parser.add_argument("image", help="path to save binary image")
     parser.add_argument(
         "-p",
+        "--port",
         dest="port",
         default="/dev/ttyUSB0",
         help="serial port on host the device UART0 is connected to",

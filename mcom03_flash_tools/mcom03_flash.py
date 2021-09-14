@@ -89,7 +89,7 @@ def main():
     parser.add_argument("image", help="path binary image to flash to SPI")
     parser.add_argument(
         "-p",
-        dest="port",
+        "--port",
         default="/dev/ttyUSB0",
         help="serial port on host the device UART0 is connected to",
     )
