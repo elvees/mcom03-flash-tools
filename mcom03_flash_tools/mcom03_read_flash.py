@@ -59,7 +59,7 @@ def main():
 
     uart = UART(prompt="#", port=args.port, baudrate=115200, verbose=args.verbose)
 
-    print("Uploading flasher...")
+    print("Uploading flasher to on-chip RAM...")
     upload_flasher(uart, args.flasher)
 
     response = uart.run(f"qspi {args.qspi}")
@@ -68,11 +68,11 @@ def main():
 
     flash_type = get_flash_type(uart)
     if flash_type is not None:
-        print(f"Found {flash_type.name}")
+        print(f"Found {flash_type.name} memory on QSPI{args.qspi}")
     else:
-        print("Unknown SPI flash")
+        print(f"Unknown SPI flash on QSPI{args.qspi}")
 
-    print("Reading image...")
+    print(f"Reading {args.size/1024:.2f} KB......")
     time_start = time.monotonic()
     read_image(uart, args.offset, args.size, args.image, args.hide_progress_bar)
     duration = time.monotonic() - time_start

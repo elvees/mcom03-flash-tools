@@ -114,20 +114,20 @@ def main():
     file_size = os.stat(args.image).st_size
     uart = UART(prompt="#", port=args.port, baudrate=115200, verbose=args.verbose)
 
-    print("Uploading flasher...")
+    print("Uploading flasher to on-chip RAM...")
     upload_flasher(uart, args.flasher)
 
     response = uart.run(f"qspi {args.qspi}")
     if "Selected" not in response:
-        raise Exception(f"Can not select QSPI controller: {response}")
+        raise Exception(f"Failed to select QSPI controller: {response}")
 
     flash_type = get_flash_type(uart)
     if flash_type is not None:
-        print(f"Found {flash_type.name}")
+        print(f"Found {flash_type.name} memory on QSPI{args.qspi}")
     else:
-        print("Unknown SPI flash")
+        print(f"Unknown SPI flash on QSPI{args.qspi}")
 
-    print("Erase...")
+    print("Erasing...")
     sectors = int(math.ceil(file_size / 65536))
     time_start = time.monotonic()
     for i in range(sectors):
@@ -138,7 +138,7 @@ def main():
     duration_erase = time.monotonic() - time_start
     if not args.hide_progress_bar:
         clear_progress_bar()
-    print("Writing to flash...")
+    print(f"Writing to flash {file_size/1024:.2f} KB...")
     flash(uart, args.offset, args.image, args.hide_progress_bar)
     duration_write = time.monotonic() - time_start - duration_erase
 
