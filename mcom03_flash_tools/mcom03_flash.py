@@ -138,19 +138,20 @@ def main():
     duration_erase = time.monotonic() - time_start
     if not args.hide_progress_bar:
         clear_progress_bar()
+    print(f"Erase: {duration_erase:0.1f} s ({file_size/duration_erase/1024:0.0f} KiB/s)")
+
     print(f"Writing to flash {file_size/1024:.2f} KB...")
     flash(uart, args.offset, args.image, args.hide_progress_bar)
     duration_write = time.monotonic() - time_start - duration_erase
+    print(f"Write: {duration_write:0.1f} s ({file_size/duration_write/1024:0.0f} KiB/s)")
 
     print("Checking...")
     verify(uart, args.offset, file_size, args.image)
     duration_check = time.monotonic() - time_start - duration_erase - duration_write
-    print("Checking succeeded")
-    print(f"Erase. Duration: {duration_erase:0.1f} seconds ({file_size/duration_erase:0.0f} B/s)")
-    print(f"Write. Duration: {duration_write:0.1f} seconds ({file_size/duration_write:0.0f} B/s)")
-    print(f"Check. Duration: {duration_check:0.1f} seconds ({file_size/duration_check:0.0f} B/s)")
+    print(f"Check: {duration_check:0.1f} s ({file_size/duration_check/1024:0.0f} KiB/s)")
+
     duration_total = duration_erase + duration_write + duration_check
-    print(f"Total. Duration: {duration_total:0.1f} seconds ({file_size/duration_total:0.0f} B/s)")
+    print(f"Total: {duration_total:0.1f} s")
 
 
 if __name__ == "__main__":
