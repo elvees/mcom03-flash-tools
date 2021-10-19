@@ -21,19 +21,23 @@ from mcom03_flash_tools import (
 )
 
 
-def flash(uart: UART, offset: int, fname: str, hide_progress_bar: bool):
+def flash(uart: UART, offset: int, fname: str, hide_progress_bar: bool, page_size: int):
     response = uart.run(f"write {offset}")
     if "Ready" not in response:
         raise Exception(f"Flash error: {response}")
 
     file_size = os.stat(fname).st_size
+    page_offset = offset & (page_size - 1)
     complete = 0
     with open(fname, "rb") as f:
         while True:
             if not hide_progress_bar:
                 print_progress_bar(complete / file_size * 100)
 
-            data = f.read(256)
+            if not complete and page_offset:
+                data = f.read(page_size - page_offset)
+            else:
+                data = f.read(page_size)
 
             size = len(data)
             complete += size
@@ -111,7 +115,7 @@ def cmd_flash(uart: UART, args, flash_type):
     print(f"Erase: {duration_erase:0.1f} s ({file_size/duration_erase/1024:0.0f} KiB/s)")
 
     print(f"Writing to flash {file_size/1024:.2f} KB...")
-    flash(uart, args.offset, args.image, args.hide_progress_bar)
+    flash(uart, args.offset, args.image, args.hide_progress_bar, flash_type.page)
     duration_write = time.monotonic() - time_start - duration_erase
     print(f"Write: {duration_write:0.1f} s ({file_size/duration_write/1024:0.0f} KiB/s)")
 
@@ -213,6 +217,9 @@ def main():
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="show UART traffic")
     parser.add_argument("--hide-progress-bar", action="store_true", help="do not show progress bar")
+    parser.add_argument("--flash-size", type=int_size, help="redefine flash total size")
+    parser.add_argument("--flash-sector", type=int_size, help="redefine flash erase sector size")
+    parser.add_argument("--flash-page", type=int_size, help="redefine flash page size")
     parser.add_argument(
         "-f",
         "--flasher",
@@ -238,11 +245,19 @@ def main():
     if response is None or "Selected" not in response:
         raise Exception(f"Failed to select QSPI controller: {response}")
 
-    flash_type = get_flash_type(uart)
-    if flash_type is not None:
-        print(f"Found {flash_type.name} memory on QSPI{args.qspi}")
+    flash_type = get_flash_type(uart, args.flash_size, args.flash_sector, args.flash_page)
+    if flash_type.name is not None:
+        print(f"Found {flash_type.name} memory on {args.qspi.upper()}")
+        print(
+            f"Flash size: {to_size(flash_type.size)}, erase sector: {to_size(flash_type.sector)}, "
+            + f"page: {to_size(flash_type.page)}"
+        )
     else:
-        print(f"Unknown SPI flash on QSPI{args.qspi}", file=sys.stderr)
+        ids = ", ".join([hex(x) for x in flash_type.id_bytes])
+        print(f"Unknown SPI flash on {args.qspi.upper()} (ID: {ids})")
+        print(
+            "Use --flash-size, --flash-sector and --flash-page options to specify flash parameters"
+        )
         return 1
 
     commands = {

@@ -184,12 +184,31 @@ def upload_flasher(uart: UART, flasher: str):
     time.sleep(0.1)  # Delay for flasher startup
 
 
-def get_flash_type(uart: UART):
-    """Read device ID bytes and detect SPI flash type. Return None for unknown SPI flash."""
+def _get_flash_type(uart: UART):
     response = uart.run("custom 0x9f 6")  # READ ID command
     ids = [int(x, 16) for x in response.strip().split(" ")]
     for flash in FLASH_LIST:
         if flash.id_bytes == ids[: len(flash.id_bytes)]:
             return flash
     else:
-        return None
+        return FlashType(None, None, None, None, ids)
+
+
+def get_flash_type(uart: UART, flash_size: int, flash_sector: int, flash_page: int):
+    """Read device ID bytes and detect SPI flash type. Replace flash parameters with custom
+    values (if value is not None). Return FlashType with name is None for unknown SPI flash.
+    """
+    flash = _get_flash_type(uart)
+
+    # Create custom flash type if any of parameters is not None
+    if [x for x in [flash_size, flash_sector, flash_page] if x is not None]:
+        # Create list with parameters.
+        params = zip([flash_size, flash_sector, flash_page], [flash.size, flash.sector, flash.page])
+        params = [auto if manual is None else manual for manual, auto in params]  # type: ignore
+
+        # None in params is mean that current flash is unknown and not all parameters are specified
+        if None not in params:  # type: ignore
+            name = "custom" if flash.name is None else f"custom (based on {flash.name})"
+            flash = FlashType._make([name] + params + [flash.id_bytes])  # type: ignore
+
+    return flash
