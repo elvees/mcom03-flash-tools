@@ -20,7 +20,6 @@ setuptools.setup(
     entry_points={
         "console_scripts": [
             "mcom03-flash = mcom03_flash_tools.mcom03_flash:main",
-            "mcom03-read-flash = mcom03_flash_tools.mcom03_read_flash:main",
         ],
     },
 )

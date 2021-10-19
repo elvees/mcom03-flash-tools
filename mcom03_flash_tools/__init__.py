@@ -168,6 +168,7 @@ def upload_flasher(uart: UART, flasher: str):
         print("Flasher is already executing")
         return
 
+    print("Sending flasher...")
     with open(flasher, "rb") as f:
         # BootROM doesn't have command, just send ihex file
         uart.tty.write(f.read())
@@ -177,7 +178,7 @@ def upload_flasher(uart: UART, flasher: str):
     uart.wait_for_string(uart.prompt, timeout=1)
 
     response = uart.run("run")  # BootROM command to execute flasher
-    if QSPI_FLASHER not in response:
+    if response is None or QSPI_FLASHER not in response:
         raise Exception(f"{QSPI_FLASHER} does not respond, response {response}")
 
     time.sleep(0.1)  # Delay for flasher startup

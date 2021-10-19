@@ -65,9 +65,13 @@
 
 #. Запустить::
 
-     mcom03-flash 0 <file-to-write> --port /dev/ttyUSBx
+     mcom03-flash --port /dev/ttyUSBx flash qspi0 <file-to-write>
 
    ``/dev/ttyUSBx`` — устройство терминала UART0 на ПК.
+
+   .. note: Для указания начального смещения (аргумент --offset) и для любых указаний размеров
+      можно использовать единицы измерения как в утилите ``dd``: 1K = 1024, 1M = 1024K, 1KB = 1000,
+      1MB = 1000KB и т.д.
 
 #. После завершения прошивки будет выведена фраза ``Checking succeeded`` и указана длительность и
    скорость прошивки. Скорость прошивки ограничена скоростью UART 115200 б/с и составляет ~8 КБ/с.
@@ -83,6 +87,11 @@
 Чтение QSPI0
 ============
 
-Для чтения образа используется mcom03-read-flash::
+Для чтения образа используется команда read утилиты mcom03-flash::
 
-  mcom03-read-flash 0 <size-in-bytes> <output-file> --port /dev/ttyUSBx
+  mcom03-flash --port /dev/ttyUSBx read qspi0 <output-file> [size-in-bytes]
+
+Если размер не указан, то будет прочитано содержимое всей памяти.
+Пример использования::
+
+  mcom03-flash --port /dev/ttyUSB0 read qspi0 new-file.img 256K
