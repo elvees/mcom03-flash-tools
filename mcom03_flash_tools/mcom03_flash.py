@@ -64,6 +64,9 @@ def flash(uart: UART, offset: int, fname: str, hide_progress_bar: bool, page_siz
 
 def erase_sector(uart: UART, offset: int):
     response = uart.run(f"erase {offset}", timeout=10)
+    if response is None:
+        raise Exception("Erase error: flash is not ready for write/erase")
+
     if "Error" in response:
         raise Exception(f"Erase error: {response}")
 
@@ -140,6 +143,18 @@ def cmd_read(uart: UART, args, flash_type):
     print(f"Read done in {duration:0.3f} seconds ({size/duration/1024:0.0f} KiB/s)")
 
 
+def cmd_erase(uart: UART, args, flash_type):
+    size = args.size if args.size is not None else flash_type.size - args.offset
+    if args.offset + size > flash_type.size:
+        print("Out of flash memory erase requested", file=sys.stderr)
+        sys.exit(1)
+
+    time_start = time.monotonic()
+    erase(uart, args.offset, size, args.hide_progress_bar, flash_type)
+    duration_erase = time.monotonic() - time_start
+    print(f"Erase: {duration_erase:0.1f} s ({size/duration_erase/1024:0.0f} KiB/s)")
+
+
 def int_size(size):
     """
     >>> int_size('1K') == int_size('1k') == int_size('0x400') == 1024
@@ -160,7 +175,7 @@ def int_size(size):
         return int(size, 0)
 
 
-__doc__ = """Tool to flash/read QSPI0, QSPI1 memory connected to MCom-03 SoC (1892ВА018).
+__doc__ = """Tool to flash/read/erase QSPI0, QSPI1 memory connected to MCom-03 SoC (1892ВА018).
 Tool algorithm:
 
 * upload baremetal binary flasher to CRAM memory via BootROM UART monitor
@@ -192,16 +207,18 @@ def main():
 
     parser_flash = subparsers.add_parser("flash", help="Flash image to QSPI")
     parser_read = subparsers.add_parser("read", help="Read data from QSPI")
-    for p in [parser_flash, parser_read]:
+    parser_erase = subparsers.add_parser("erase", help="Erase data on QSPI")
+    for p in [parser_flash, parser_read, parser_erase]:
         p.add_argument("qspi", choices=["qspi0", "qspi1"], help="QSPI controller to use")
     help_msg = (
-        "size to read. Examples: 65536, 128K (131072 bytes), 4M (4194304 bytes), "
+        "size to read/erase. Examples: 65536, 128K (131072 bytes), 4M (4194304 bytes), "
         + "128kB (128000 bytes), 4MB (4000000 bytes). If specified -1 then will be used all rest "
         + "of flash (after --offset)"
     )
-    parser_read.add_argument("fname", help="file name to save")
-    parser_read.add_argument("size", type=int_size, nargs="?", help=help_msg)
     parser_flash.add_argument("image", help="path binary image to flash to SPI")
+    parser_read.add_argument("fname", help="file name to save")
+    for p in [parser_read, parser_erase]:
+        p.add_argument("size", type=int_size, nargs="?", help=help_msg)
 
     parser.add_argument(
         "-p",
@@ -213,7 +230,7 @@ def main():
         "--offset",
         type=int_size,
         default=0,
-        help="flash/read data starting from OFFSET bytes (e.g. 0x100, 1024, 128K)",
+        help="flash/read/erase data starting from OFFSET bytes (e.g. 0x100, 1024, 128K)",
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="show UART traffic")
     parser.add_argument("--hide-progress-bar", action="store_true", help="do not show progress bar")
@@ -263,6 +280,7 @@ def main():
     commands = {
         "flash": cmd_flash,
         "read": cmd_read,
+        "erase": cmd_erase,
     }
     command_func = commands.get(args.command)
     command_func(uart, args, flash_type)  # type: ignore

@@ -95,3 +95,17 @@
 Пример использования::
 
   mcom03-flash --port /dev/ttyUSB0 read qspi0 new-file.img 256K
+
+Очистка QSPI0
+=============
+
+Для очистки памяти используется команда erase утилиты mcom03-flash::
+
+  mcom03-flash --port /dev/ttyUSBx erase qspi0 [size-in-bytes]
+
+Если размер не указан, то будет очищена вся память.
+Пример использования::
+
+  mcom03-flash --port /dev/ttyUSBx erase qspi0 1M
+
+.. important: Размер очищаемой памяти будет округлён вверх и будет кратен размеру блоку стирания.
