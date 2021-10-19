@@ -28,7 +28,7 @@ except pkg_resources.DistributionNotFound:
 class UART(object):
     """Class for work with UART console."""
 
-    def __init__(self, prompt, port, newline=b"\n\r", verbose=False, baudrate=115200, timeout=0.5):
+    def __init__(self, prompt, port, newline=b"\r", verbose=False, baudrate=115200, timeout=0.5):
         """Parameters
         ----------
         prompt : str
