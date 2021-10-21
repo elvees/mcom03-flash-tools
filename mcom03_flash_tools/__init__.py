@@ -180,6 +180,8 @@ def upload_flasher(uart: UART, flasher: str):
     if QSPI_FLASHER not in response:
         raise Exception(f"{QSPI_FLASHER} does not respond, response {response}")
 
+    time.sleep(0.1)  # Delay for flasher startup
+
 
 def get_flash_type(uart: UART):
     """Read device ID bytes and detect SPI flash type. Return None for unknown SPI flash."""
