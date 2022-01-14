@@ -9,14 +9,10 @@
 
 Поддерживаемые модули и памяти:
 
-.. csv-table::
-   :header-rows: 1
-   :delim: ;
-
-   Модуль             ; Память        ; Примечание
-   MCom-03 BuB r1.3.0 ; QSPI0, QSPI1  ; —
-   ELV-MC03-SMARC r1.0; QSPI0         ; В составе NGFW-CB r1.0 и Congatec сonga-SEVAL.
-                                        QSPI1 не установлен на SMARC-модуле.
+* MCom-03 BuB r1.3.0, r1.5.0 (QSPI0, QSPI1);
+* NGFW-CB r1.0 с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0);
+* Congatec сonga-SEVAL с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0);
+* ROCK Pi N10 с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0).
 
 Прошивка выполняется по интерфейсу UART0: MCom-03 BootROM в режиме загрузки по UART принимает
 образ spi-flasher, spi-flasher запускается на RISC0, повышает частоты, принимает образы для прошивки
@@ -56,6 +52,7 @@
    * на модуле NGFW-CB (*BOOT2,1,0*): ON, OFF, OFF
    * на модуле MCom-03 BuB (*BOOT2,1,0*): OFF, ON, ON
    * на модуле conga-SEVAL (*BOOT_SEL2,1,0*): ON, OFF, OFF
+   * на модуле ROCK Pi N10 снять джампер с пинов GPIO 25,26 (*GND,ADC_IN1*)
 
 #. Подключить кабель USB для UART-консоли модуля.
 
@@ -86,6 +83,7 @@
    * на модуле NGFW-CB (*BOOT2,1,0*): ON, ON, ON
    * на модуле MCom-03 BuB (*BOOT2,1,0*): OFF, OFF, OFF
    * на модуле conga-SEVAL (*BOOT_SEL2,1,0*): ON, ON, ON
+   * на модуле ROCK Pi N10 установить джампер на пины GPIO 25,26 (*GND,ADC_IN1*)
 
 Чтение QSPI0
 ============
