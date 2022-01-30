@@ -212,7 +212,7 @@ def main():
         p.add_argument("qspi", choices=["qspi0", "qspi1"], help="QSPI controller to use")
     help_msg = (
         "size to read/erase. Examples: 65536, 128K (131072 bytes), 4M (4194304 bytes), "
-        + "128kB (128000 bytes), 4MB (4000000 bytes). If specified -1 then will be used all rest "
+        + "128kB (128000 bytes), 4MB (4000000 bytes). If not defined then will be used all rest "
         + "of flash (after --offset)"
     )
     parser_flash.add_argument("image", help="path binary image to flash to SPI")
