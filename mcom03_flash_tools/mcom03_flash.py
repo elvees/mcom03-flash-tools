@@ -210,6 +210,11 @@ def main():
     parser_erase = subparsers.add_parser("erase", help="Erase data on QSPI")
     for p in [parser_flash, parser_read, parser_erase]:
         p.add_argument("qspi", choices=["qspi0", "qspi1"], help="QSPI controller to use")
+        p.add_argument(
+            "--voltage18",
+            action="store_true",
+            help="Setup QSPI1 to 1.8V. Not used for QSPI0",
+        )
     help_msg = (
         "size to read/erase. Examples: 65536, 128K (131072 bytes), 4M (4194304 bytes), "
         + "128kB (128000 bytes), 4MB (4000000 bytes). If not defined then will be used all rest "
@@ -258,7 +263,7 @@ def main():
     print("Uploading flasher to on-chip RAM...")
     upload_flasher(uart, args.flasher)
 
-    response = uart.run(f"qspi {args.qspi[-1:]}")
+    response = uart.run(f"qspi {args.qspi[-1:]} {int(args.voltage18)}")
     if response is None or "Selected" not in response:
         raise Exception(f"Failed to select QSPI controller: {response}")
 
