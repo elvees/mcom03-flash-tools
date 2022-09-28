@@ -4,6 +4,7 @@
 
 import argparse
 import binascii
+import glob
 import math
 import os
 import sys
@@ -106,53 +107,56 @@ def verify(uart: UART, offset: int, size: int, fname: str):
         raise Exception(f"Verification failed. Expected CRC {crc:#x}, but read {read_crc:#x}")
 
 
-def cmd_flash(uart: UART, args, flash_type):
-    file_size = os.stat(args.image).st_size
-    if args.offset + file_size > flash_type.size:
-        print("File does not fit to flash memory", file=sys.stderr)
+def cmd_flash(uart: UART, image: str, offset: int, hide_progress_bar: bool, flash_type):
+    file_size = os.stat(image).st_size
+    limit = offset + file_size
+    if limit > flash_type.size:
+        print(image + " doesn't fit to flash memory", file=sys.stderr)
         sys.exit(1)
 
     time_start = time.monotonic()
-    erase(uart, args.offset, file_size, args.hide_progress_bar, flash_type)
+    erase(uart, offset, file_size, hide_progress_bar, flash_type)
     duration_erase = time.monotonic() - time_start
     print(f"Erase: {duration_erase:0.1f} s ({file_size/duration_erase/1024:0.0f} KiB/s)")
 
     print(f"Writing to flash {file_size/1024:.2f} KB...")
-    flash(uart, args.offset, args.image, args.hide_progress_bar, flash_type.page)
+    flash(uart, offset, image, hide_progress_bar, flash_type.page)
     duration_write = time.monotonic() - time_start - duration_erase
     print(f"Write: {duration_write:0.1f} s ({file_size/duration_write/1024:0.0f} KiB/s)")
 
     print("Checking...")
-    verify(uart, args.offset, file_size, args.image)
+    verify(uart, offset, file_size, image)
     duration_check = time.monotonic() - time_start - duration_erase - duration_write
     print(f"Check: {duration_check:0.1f} s ({file_size/duration_check/1024:0.0f} KiB/s)")
     duration_total = duration_erase + duration_write + duration_check
     print(f"Total: {duration_total:0.1f} s")
 
 
-def cmd_read(uart: UART, args, flash_type):
-    size = args.size if args.size is not None else flash_type.size - args.offset
-    if args.offset + size > flash_type.size:
+def cmd_read(uart: UART, fname: str, offset: int, size: int, hide_progress_bar: bool, flash_type):
+    read_size = size if size is not None else flash_type.size - offset
+    limit = offset + read_size
+    if limit > flash_type.size:
         print("Out of flash memory read requested", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Reading {size/1024:.2f} KiB...")
+    print(f"Reading {read_size/1024:.2f} KiB...")
     time_start = time.monotonic()
-    read_image(uart, args.offset, size, args.fname, args.hide_progress_bar)
+    read_image(uart, offset, read_size, fname, hide_progress_bar)
     duration = time.monotonic() - time_start
-    print(f"Read done in {duration:0.3f} seconds ({size/duration/1024:0.0f} KiB/s)")
+    print(f"Read done in {duration:0.3f} seconds ({read_size/duration/1024:0.0f} KiB/s)")
 
 
-def cmd_erase(uart: UART, args, flash_type):
-    size = args.size if args.size is not None else flash_type.size - args.offset
-    if args.offset + size > flash_type.size:
+def cmd_erase(uart: UART, offset: int, size: int, hide_progress_bar: bool, flash_type):
+    erase_size = size if size is not None else flash_type.size - offset
+    limit = offset + erase_size
+    if limit > flash_type.size:
         print("Out of flash memory erase requested", file=sys.stderr)
         sys.exit(1)
 
     time_start = time.monotonic()
-    erase(uart, args.offset, size, args.hide_progress_bar, flash_type)
+    erase(uart, offset, erase_size, hide_progress_bar, flash_type)
     duration_erase = time.monotonic() - time_start
-    print(f"Erase: {duration_erase:0.1f} s ({size/duration_erase/1024:0.0f} KiB/s)")
+    print(f"Erase: {duration_erase:0.1f} s ({erase_size/duration_erase/1024:0.0f} KiB/s)")
 
 
 def int_size(size):
@@ -206,9 +210,13 @@ def main() -> int:
     subparsers = parser.add_subparsers(dest="command")
 
     parser_flash = subparsers.add_parser("flash", help="Flash image to QSPI")
+    parser_flash_tl = subparsers.add_parser("flash-tl", help="Flash tl images to QSPI")
+    parser_flash_tl_dir = subparsers.add_parser(
+        "flash-tl-dir", help="Flash tl images to QSPI relative to directory"
+    )
     parser_read = subparsers.add_parser("read", help="Read data from QSPI")
     parser_erase = subparsers.add_parser("erase", help="Erase data on QSPI")
-    for p in [parser_flash, parser_read, parser_erase]:
+    for p in [parser_flash, parser_flash_tl, parser_flash_tl_dir, parser_read, parser_erase]:
         p.add_argument("qspi", choices=["qspi0", "qspi1"], help="QSPI controller to use")
         p.add_argument(
             "--voltage18",
@@ -224,18 +232,45 @@ def main() -> int:
     parser_read.add_argument("fname", help="file name to save")
     for p in [parser_read, parser_erase]:
         p.add_argument("size", type=int_size, nargs="?", help=help_msg)
-
+    for p in [parser_flash, parser_read, parser_erase]:
+        p.add_argument(
+            "--offset",
+            type=int_size,
+            default=0,
+            help="Process data starting from OFFSET bytes (e.g. 0x100, 1024, 128K)",
+        )
+    parser_flash_tl.add_argument(
+        "bootrom_sbimg",
+        metavar="*-bootrom.sbimg",
+        help="Path to *-bootrom.sbimg to flash to SPI",
+    )
+    parser_flash_tl.add_argument(
+        "sbl_tl_sbimg",
+        metavar="sbl-tl.sbimg",
+        help="Path to sbl-tl.sbimg to flash to SPI",
+    )
+    parser_flash_tl.add_argument(
+        "sbl_tl_otp",
+        metavar="sbl-tl-otp.bin",
+        help="Path to sbl-tl-otp.bin",
+    )
+    parser_flash_tl_dir.add_argument(
+        "tl_images_dir",
+        type=str,
+        help="Path where to search tl images",
+    )
+    parser_flash_tl_dir.add_argument(
+        "tl_images",
+        nargs="*",
+        default=["*-bootrom.sbimg", "sbl-tl.sbimg", "sbl-tl-otp.bin"],
+        help="List of tl images (paths relative to images dir)."
+        + "'_' placeholder can be used to skip image flashing",
+    )
     parser.add_argument(
         "-p",
         "--port",
         default="/dev/ttyUSB0",
         help="serial port on host the device UART0 is connected to",
-    )
-    parser.add_argument(
-        "--offset",
-        type=int_size,
-        default=0,
-        help="flash/read/erase data starting from OFFSET bytes (e.g. 0x100, 1024, 128K)",
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="show UART traffic")
     parser.add_argument(
@@ -264,6 +299,14 @@ def main() -> int:
     if args.command is None:
         print("Command is not specified")
         return 1
+    elif args.command == "flash-tl":
+        if args.qspi != "qspi0":
+            print("Unsupported QSPI controller")
+            return 1
+
+    if args.qspi == "qspi0" and args.voltage18:
+        print("Unsupported QSPI0 setings: --voltage18 is forbidden")
+        return 1
 
     uart = UART(prompt="#", port=args.port, baudrate=115200, verbose=args.verbose)
 
@@ -289,13 +332,53 @@ def main() -> int:
         )
         return 1
 
-    commands = {
-        "flash": cmd_flash,
-        "read": cmd_read,
-        "erase": cmd_erase,
-    }
-    command_func = commands.get(args.command)
-    command_func(uart, args, flash_type)  # type: ignore
+    def flash_images(images: dict, image_dir: str = ""):
+        for offset, image in images.items():
+            if image == "_":
+                continue
+            paths = glob.glob(os.path.join(image_dir, image))
+            if len(paths) == 0:
+                print(f"Wrong path to {image}", file=sys.stderr)
+                sys.exit(1)
+            print(f"Flash {paths[0]} starting from {hex(offset)} bytes")
+            cmd_flash(
+                uart,
+                paths[0],
+                offset,
+                args.hide_progress_bar,
+                flash_type,
+            )
+        return
+
+    if args.command == "flash":
+        cmd_flash(uart, args.image, args.offset, args.hide_progress_bar, flash_type)
+    elif args.command == "read":
+        cmd_read(uart, args.fname, args.offset, args.size, args.hide_progress_bar, flash_type)
+    elif args.command == "erase":
+        cmd_erase(uart, args.offset, args.size, args.hide_progress_bar, flash_type)
+    elif args.command == "flash-tl":
+        flash_images(
+            {0: args.bootrom_sbimg, 0x200000: args.sbl_tl_sbimg, 0xA00000: args.sbl_tl_otp}
+        )
+    elif args.command == "flash-tl-dir":
+        if os.path.isdir(args.tl_images_dir) is False:
+            print(f"Path {args.tl_images_dir} is not valid directory")
+            return 1
+        if len(args.tl_images) != 3:
+            print("Wrong number of images is provided")
+            return 1
+        flash_images(
+            {0: args.tl_images[0], 0x200000: args.tl_images[1], 0xA00000: args.tl_images[2]},
+            args.tl_images_dir,
+        )
+    else:
+        print("Unknown command")
+        return 1
+
+    if args.command == "flash-tl" or args.command == "flash-tl-dir":
+        # The tl software uses 2 pages to store its non-volatile settings at 0xC10000 offset.
+        # They have to be cleaned after flashing new tl images.
+        cmd_erase(uart, 0xC10000, int_size("128K"), args.hide_progress_bar, flash_type)
 
     return 0
 
