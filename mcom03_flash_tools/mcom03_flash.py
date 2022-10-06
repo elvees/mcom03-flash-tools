@@ -238,7 +238,11 @@ def main():
         help="flash/read/erase data starting from OFFSET bytes (e.g. 0x100, 1024, 128K)",
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="show UART traffic")
-    parser.add_argument("--hide-progress-bar", action="store_true", help="do not show progress bar")
+    parser.add_argument(
+        "--hide-progress-bar",
+        action="store_true",
+        help="do not show progress bar (progress bar is hidden in non-interactive shell)",
+    )
     parser.add_argument("--flash-size", type=int_size, help="redefine flash total size")
     parser.add_argument("--flash-sector", type=int_size, help="redefine flash erase sector size")
     parser.add_argument("--flash-page", type=int_size, help="redefine flash page size")
@@ -251,6 +255,9 @@ def main():
     parser.add_argument("--version", action="version", version=__version__)
 
     args = parser.parse_args()
+
+    if not sys.stdout.isatty():
+        args.hide_progress_bar = True
 
     # TODO In Python 3.7 added 'required' for add_subparsers() method.
     # While we use Python 3.6 we need to check args.command manually.
