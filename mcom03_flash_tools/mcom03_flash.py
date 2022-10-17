@@ -189,7 +189,7 @@ M=1024*1024, binary prefixes can be used, too: KiB=K, MiB=M, and so on.
 """
 
 
-def main():
+def main() -> int:
     class Formatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
         pass
 
@@ -297,6 +297,8 @@ def main():
     command_func = commands.get(args.command)
     command_func(uart, args, flash_type)  # type: ignore
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
