@@ -2,4 +2,10 @@
 - project:
     check:
       jobs:
+        - mcom03-linux-fast-tests:
+            files: &observered_files
+              - .*\.py$
+              - mcom03_flash_tools/.*
+        - mcom03-tl-linux-fast-tests:
+            files: *observered_files
         - tox
