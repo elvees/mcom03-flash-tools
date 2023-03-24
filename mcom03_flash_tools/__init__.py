@@ -15,6 +15,8 @@ FLASH_LIST = [
     FlashType("M25P32", 4 * MiB, 64 * KiB, 256, [0x20, 0x20, 0x16, 0x10]),
     FlashType("S25FL128S", 16 * MiB, 64 * KiB, 256, [0x1, 0x20, 0x18, 0x4D, 0x1, 0x80]),
     FlashType("S25FL256S", 32 * MiB, 64 * KiB, 256, [0x1, 0x2, 0x19, 0x4D, 0x1, 0x80]),
+    FlashType("W25Q16JW-IM", 2 * MiB, 64 * KiB, 256, [0xEF, 0x80, 0x15]),
+    FlashType("W25Q16JW-IQ/JQ", 2 * MiB, 64 * KiB, 256, [0xEF, 0x60, 0x15]),
     FlashType("W25Q32", 4 * MiB, 64 * KiB, 256, [0xEF, 0x40, 0x16]),
     FlashType("W25Q128JV-IN/IQ/JQ", 16 * MiB, 64 * KiB, 256, [0xEF, 0x40, 0x18]),
     FlashType("W25Q128JV-IM/JM", 16 * MiB, 64 * KiB, 256, [0xEF, 0x70, 0x18]),
