@@ -23,7 +23,7 @@ from mcom03_flash_tools import (
 
 
 def flash(uart: UART, offset: int, fname: str, hide_progress_bar: bool, page_size: int):
-    response = uart.run(f"write {offset}")
+    response = uart.run(f"write {offset} {page_size}")
     if "Ready" not in response:
         raise Exception(f"Flash error: {response}")
 
