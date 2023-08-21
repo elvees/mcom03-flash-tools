@@ -22,6 +22,10 @@
 
    *-bootrom.sbimg, sbl-tl-*.sbimg, sbl-tl-otp.bin
 
+Для записи образов из архива `tl-image` используется команда flash-tl-image::
+
+  mcom03-flash --port /dev/ttyUSBx flash-tl-image qspi0 <tl_images_dir> *.tl-image
+
 Для игнорирования записи любого образа можно использовать символ "_" вместо имени образа.
 В примерах ниже будет записан только образ sbl-tl.sbimg::
 

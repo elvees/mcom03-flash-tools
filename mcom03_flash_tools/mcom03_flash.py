@@ -5,10 +5,15 @@
 import argparse
 import binascii
 import glob
+import io
 import math
 import os
 import sys
+import tarfile
 import time
+from typing import Any, Tuple
+
+import tomli
 
 from mcom03_flash_tools import (
     UART,
@@ -22,45 +27,50 @@ from mcom03_flash_tools import (
 )
 
 
-def flash(uart: UART, offset: int, fname: str, hide_progress_bar: bool, page_size: int):
+def flash(
+    uart: UART,
+    offset: int,
+    f_obj: io.BufferedReader,
+    f_size: int,
+    hide_progress_bar: bool,
+    page_size: int,
+):
     response = uart.run(f"write {offset} {page_size}")
     if "Ready" not in response:
         raise Exception(f"Flash error: {response}")
 
-    file_size = os.stat(fname).st_size
     page_offset = offset & (page_size - 1)
     complete = 0
-    with open(fname, "rb") as f:
-        while True:
-            if not hide_progress_bar:
-                print_progress_bar(complete / file_size * 100)
+    while True:
+        if not hide_progress_bar:
+            print_progress_bar(complete / f_size * 100)
 
-            if not complete and page_offset:
-                data = f.read(page_size - page_offset)
-            else:
-                data = f.read(page_size)
+        if not complete and page_offset:
+            data = f_obj.read(page_size - page_offset)
+        else:
+            data = f_obj.read(page_size)
 
-            size = len(data)
-            complete += size
-            crc = binascii.crc_hqx(data, 0xFFFF)
-            for _ in range(3):
-                uart.tty.write(size.to_bytes(2, "little"))
-                uart.tty.write(crc.to_bytes(2, "little"))
-                if not data:
-                    if not hide_progress_bar:
-                        clear_progress_bar()
-                    uart.wait_for_string(uart.prompt)
-                    return
+        size = len(data)
+        complete += size
+        crc = binascii.crc_hqx(data, 0xFFFF)
+        for _ in range(3):
+            uart.tty.write(size.to_bytes(2, "little"))
+            uart.tty.write(crc.to_bytes(2, "little"))
+            if not data:
+                if not hide_progress_bar:
+                    clear_progress_bar()
+                uart.wait_for_string(uart.prompt)
+                return
 
-                uart.tty.write(data)
-                success, response = uart.wait_for_string(["R", "C"])
-                if not success:
-                    Exception(f"Wrong response while flashing: {response}")
+            uart.tty.write(data)
+            success, response = uart.wait_for_string(["R", "C"])
+            if not success:
+                Exception(f"Wrong response while flashing: {response}")
 
-                if response.strip() == "R":  # Ready for next block
-                    break
-            else:
-                raise Exception("CRC errors threshold exceeded 3 times")
+            if response.strip() == "R":  # Ready for next block
+                break
+        else:
+            raise Exception("CRC errors threshold exceeded 3 times")
 
 
 def erase_sector(uart: UART, offset: int):
@@ -97,39 +107,54 @@ def erase(uart: UART, offset: int, size: int, hide_progress_bar: bool, flash_typ
         clear_progress_bar()
 
 
-def verify(uart: UART, offset: int, size: int, fname: str):
-    with open(fname, "rb") as f:
-        crc = binascii.crc_hqx(f.read(), 0xFFFF)
+def verify(uart: UART, offset: int, f_obj: io.BufferedReader, f_size: int):
+    if not f_obj.seekable():
+        raise Exception(f"The file object {f_obj.name} is not seekable")
 
-    response = uart.run(f"readcrc {offset} {size}", timeout=size / 10000 + 5)
+    f_obj.seek(0)
+    crc = binascii.crc_hqx(f_obj.read(), 0xFFFF)
+
+    response = uart.run(f"readcrc {offset} {f_size}", timeout=f_size / 10000 + 5)
     read_crc = int(response, 0)
     if read_crc != crc:
         raise Exception(f"Verification failed. Expected CRC {crc:#x}, but read {read_crc:#x}")
 
 
-def cmd_flash(uart: UART, image: str, offset: int, hide_progress_bar: bool, flash_type):
-    file_size = os.stat(image).st_size
-    limit = offset + file_size
+def cmd_flash_file(
+    uart: UART,
+    offset: int,
+    f_obj: io.BufferedReader,
+    f_size: int,
+    hide_progress_bar: bool,
+    flash_type,
+):
+    limit = offset + f_size
     if limit > flash_type.size:
-        print(image + " doesn't fit to flash memory", file=sys.stderr)
+        print("Image doesn't fit to flash memory", file=sys.stderr)
         sys.exit(1)
 
     time_start = time.monotonic()
-    erase(uart, offset, file_size, hide_progress_bar, flash_type)
+    erase(uart, offset, f_size, hide_progress_bar, flash_type)
     duration_erase = time.monotonic() - time_start
-    print(f"Erase: {duration_erase:0.1f} s ({file_size/duration_erase/1024:0.0f} KiB/s)")
+    print(f"Erase: {duration_erase:0.1f} s ({f_size/duration_erase/1024:0.0f} KiB/s)")
 
-    print(f"Writing to flash {file_size/1024:.2f} KB...")
-    flash(uart, offset, image, hide_progress_bar, flash_type.page)
+    print(f"Writing to flash {f_size/1024:.2f} KB...")
+    flash(uart, offset, f_obj, f_size, hide_progress_bar, flash_type.page)
     duration_write = time.monotonic() - time_start - duration_erase
-    print(f"Write: {duration_write:0.1f} s ({file_size/duration_write/1024:0.0f} KiB/s)")
+    print(f"Write: {duration_write:0.1f} s ({f_size/duration_write/1024:0.0f} KiB/s)")
 
     print("Checking...")
-    verify(uart, offset, file_size, image)
+    verify(uart, offset, f_obj, f_size)
     duration_check = time.monotonic() - time_start - duration_erase - duration_write
-    print(f"Check: {duration_check:0.1f} s ({file_size/duration_check/1024:0.0f} KiB/s)")
+    print(f"Check: {duration_check:0.1f} s ({f_size/duration_check/1024:0.0f} KiB/s)")
     duration_total = duration_erase + duration_write + duration_check
     print(f"Total: {duration_total:0.1f} s")
+
+
+def cmd_flash(uart: UART, image: str, offset: int, hide_progress_bar: bool, flash_type):
+    f_size = os.stat(image).st_size
+    with io.open(image, "rb") as f_obj:
+        cmd_flash_file(uart, offset, f_obj, f_size, hide_progress_bar, flash_type)
 
 
 def cmd_read(uart: UART, fname: str, offset: int, size: int, hide_progress_bar: bool, flash_type):
@@ -214,9 +239,19 @@ def main() -> int:
     parser_flash_tl_dir = subparsers.add_parser(
         "flash-tl-dir", help="Flash tl images to QSPI relative to directory"
     )
+    parser_flash_tl_image = subparsers.add_parser(
+        "flash-tl-image", help="Flash tl images to QSPI from tar package"
+    )
     parser_read = subparsers.add_parser("read", help="Read data from QSPI")
     parser_erase = subparsers.add_parser("erase", help="Erase data on QSPI")
-    for p in [parser_flash, parser_flash_tl, parser_flash_tl_dir, parser_read, parser_erase]:
+    for p in [
+        parser_flash,
+        parser_flash_tl,
+        parser_flash_tl_dir,
+        parser_flash_tl_image,
+        parser_read,
+        parser_erase,
+    ]:
         p.add_argument("qspi", choices=["qspi0", "qspi1"], help="QSPI controller to use")
         p.add_argument(
             "--voltage18",
@@ -265,6 +300,11 @@ def main() -> int:
         default=["*-bootrom.sbimg", "sbl-tl*.sbimg", "sbl-tl-otp.bin"],
         help="List of tl images (paths relative to images dir)."
         + "'_' placeholder can be used to skip image flashing",
+    )
+    parser_flash_tl_image.add_argument(
+        "tl_image",
+        type=str,
+        help="Path to tar package with tl images",
     )
     parser.add_argument(
         "-p",
@@ -350,6 +390,18 @@ def main() -> int:
             )
         return
 
+    def get_file_from_tar(tar: tarfile.TarFile, filename: str) -> Tuple[int, Any]:
+        try:
+            member = tar.getmember(filename)
+            file = tar.extractfile(member)
+        except KeyError:
+            return 0, None
+
+        if file is None:
+            return 0, None
+
+        return member.size, file
+
     if args.command == "flash":
         cmd_flash(uart, args.image, args.offset, args.hide_progress_bar, flash_type)
     elif args.command == "read":
@@ -371,6 +423,52 @@ def main() -> int:
             {0: args.tl_images[0], 0x200000: args.tl_images[1], 0xA00000: args.tl_images[2]},
             args.tl_images_dir,
         )
+    elif args.command == "flash-tl-image":
+        if os.path.isfile(args.tl_image) is False:
+            print(f"{args.tl_image} is not an existing regular file")
+            return 1
+        if tarfile.is_tarfile(args.tl_image) is False:
+            print(f"{args.tl_image} is not tar file")
+            return 1
+        with tarfile.open(args.tl_image, "r") as tar:
+            _, package_toml = get_file_from_tar(tar, "package.toml")
+            if package_toml is None:
+                print(f"There is no 'package.json' file in {args.tl_image}")
+                return 1
+            toml_dict = tomli.load(package_toml)
+            supported_version = "0.0.1"
+            provided_version = toml_dict["info"]["format_version"]
+            if provided_version == supported_version:
+                for scenario, properties in toml_dict["profile"]["initial"].items():
+                    print(f"Run initial profile scenario '{scenario}':")
+                    negative_offset = properties.get("negative_offset", False)
+                    offset = properties.get("offset", 0)
+                    if negative_offset:
+                        offset = flash_type.size - offset
+                    desc = properties.get("description")
+                    command = properties.get("command")
+                    if command == "flash":
+                        name = properties.get("name")
+                        if name is None:
+                            print("  The file name isn't provided in the scenario")
+                            return 1
+                        size, file = get_file_from_tar(tar, name)
+                        if file is None:
+                            print(f"  There is no file '{name}' in {args.tl_image}")
+                            return 1
+                        print(f"  Description: {desc}\n  Offset: {hex(offset)}\n  Image: {name}")
+                        cmd_flash_file(uart, offset, file, size, args.hide_progress_bar, flash_type)
+                    elif command == "erase":
+                        size = properties.get("size")
+                        print(f"  Description: {desc}\n  Offset: {hex(offset)}")
+                        cmd_erase(uart, offset, size, args.hide_progress_bar, flash_type)
+                    else:
+                        print(f"  Unsupported command '{command}' is provided in the scenario")
+                        return 1
+            else:
+                print(f"Unsupported version ({provided_version}) of the description is provided")
+                print(f"The supported version is {supported_version}")
+                return 1
     else:
         print("Unknown command")
         return 1
