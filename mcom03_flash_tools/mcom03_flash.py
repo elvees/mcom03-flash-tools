@@ -242,12 +242,12 @@ def main() -> int:
     parser_flash_tl.add_argument(
         "bootrom_sbimg",
         metavar="*-bootrom.sbimg",
-        help="Path to *-bootrom.sbimg to flash to SPI",
+        help="Path to BootROM SBIMG to flash to SPI",
     )
     parser_flash_tl.add_argument(
         "sbl_tl_sbimg",
-        metavar="sbl-tl.sbimg",
-        help="Path to sbl-tl.sbimg to flash to SPI",
+        metavar="sbl-tl*.sbimg",
+        help="Path to SBL-TL SBIMG to flash to SPI",
     )
     parser_flash_tl.add_argument(
         "sbl_tl_otp",
@@ -262,7 +262,7 @@ def main() -> int:
     parser_flash_tl_dir.add_argument(
         "tl_images",
         nargs="*",
-        default=["*-bootrom.sbimg", "sbl-tl.sbimg", "sbl-tl-otp.bin"],
+        default=["*-bootrom.sbimg", "sbl-tl*.sbimg", "sbl-tl-otp.bin"],
         help="List of tl images (paths relative to images dir)."
         + "'_' placeholder can be used to skip image flashing",
     )

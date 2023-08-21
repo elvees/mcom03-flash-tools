@@ -3,30 +3,30 @@
 
 Состав tl-образов для загрузки c помощью BootROM:
 
-* образ <PLAT>-bootrom.sbimg (загружается с помощью BootROM);
-* образ sbl-tl.sbimg (загружается с помощью вторичного загрузчика sbl-tl);
+* образ <BOARD>-bootrom.sbimg (загружается с помощью BootROM);
+* образ sbl-tl-<DTB>.sbimg (загружается с помощью вторичного загрузчика sbl-tl);
 * конфигурация загрузчика (sbl-tl-otp.bin).
 
 Для записи образов используется команда flash-tl утилиты mcom03-flash::
 
   mcom03-flash --port /dev/ttyUSBx flash-tl qspi0 \
-    <path_to>/*-bootrom.sbimg <path_to>/sbl-tl.sbimg <path_to>/sbl-tl-otp.bin
+    <path_to>/*-bootrom.sbimg <path_to>/sbl-tl-*.sbimg <path_to>/sbl-tl-otp.bin
 
 Для записи образов из определенной директории используется команда flash-tl-dir::
 
   mcom03-flash --port /dev/ttyUSBx flash-tl-dir qspi0 <tl_images_dir> \
-    [ <PLAT>-bootrom.sbimg sbl-tl.sbimg sbl-tl-otp.bin ]
+    [ *-bootrom.sbimg sbl-tl-*.sbimg sbl-tl-otp.bin ]
 
 .. note:: Имеет значение порядок перечисления образов после указанной директории.
    Если образы не указаны, используется список образов по умолчанию:
 
-   <PLAT>-bootrom.sbimg, sbl-tl.sbimg, sbl-tl-otp.bin
+   *-bootrom.sbimg, sbl-tl-*.sbimg, sbl-tl-otp.bin
 
 Для игнорирования записи любого образа можно использовать символ "_" вместо имени образа.
 В примерах ниже будет записан только образ sbl-tl.sbimg::
 
-  mcom03-flash flash-tl qspi0 _ <path_to>/sbl-tl.sbimg _
-  mcom03-flash flash-tl-dir qspi0 <tl_images_dir> _ sbl-tl.sbimg _
+  mcom03-flash flash-tl qspi0 _ <path_to>/sbl-tl-*.sbimg _
+  mcom03-flash flash-tl-dir qspi0 <tl_images_dir> _ sbl-tl-*.sbimg _
 
 .. note:: При вызове команды flash-tl не допускается использование параметров `qspi1` и
    `--voltage18`. Такой запрос вернет ошибку.
