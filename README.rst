@@ -14,7 +14,8 @@
 * Congatec сonga-SEVAL с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0);
 * ROCK Pi N10 с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0);
 * ELV-SMARC-CB r1.0 с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0);
-* ELV-SMARC-CB r2.9, r2.10.3 с установленным ELV-MC03-SMARC r2.2 (QSPI0).
+* ELV-SMARC-CB r2.9.1 с установленным ELV-MC03-SMARC r2.2 (QSPI0);
+* ELV-SMARC-CB r2.10.3 с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0).
 
 Прошивка выполняется по интерфейсу UART0: MCom-03 BootROM в режиме загрузки по UART принимает
 образ spi-flasher, spi-flasher запускается на RISC0, повышает частоты, принимает образы для прошивки
