@@ -25,18 +25,33 @@
 
    *-bootrom.sbimg, sbl-tl-*.sbimg, sbl-tl-otp.bin
 
-Для записи образов из архива `tl-image` используется команда flash-tl-image::
-
-  mcom03-flash --port /dev/ttyUSBx flash-tl-image qspi0 <tl_images_dir> *.tl-image
-
 Для игнорирования записи любого образа можно использовать символ "_" вместо имени образа.
 В примерах ниже будет записан только образ sbl-tl.sbimg::
 
   mcom03-flash flash-tl qspi0 _ <path_to>/sbl-tl-*.sbimg _
   mcom03-flash flash-tl-dir qspi0 <tl_images_dir> _ sbl-tl-*.sbimg _
 
-.. note:: При вызове команды flash-tl не допускается использование параметров `qspi1` и
-   `--voltage18`. Такой запрос вернет ошибку.
+Для записи образов из архива `tl-image` используется команда flash-tl-image::
+
+  mcom03-flash --port /dev/ttyUSBx flash-tl-image qspi0 <path_to>/*.tl-image
+
+В состав архива `*.tl-image` входит описание пакета `package.toml`, представляющее собой
+набор профилей. Профилем по умолчанию является первый найденый профиль в `package.toml`.
+Каждый профиль содержит набор действий. Действием по умолчанию является ``all``. При этом
+выполняются все действия профиля. Весь перечень профилей и действий см. в `package.toml`.
+
+Выбор профиля осуществляется передачей аргумента `--profile`::
+
+  mcom03-flash --port /dev/ttyUSBx flash-tl-image --profile <profile> qspi0 \
+    <path_to>/*.tl-image
+
+Выбор сценария профиля осуществляется передачей аргумента `--action`::
+
+  mcom03-flash --port /dev/ttyUSBx flash-tl-image --profile <profile> --action <action> qspi0 \
+    <path_to>/*.tl-image
+
+.. note:: При вызове команд flash-tl, flash-tl-dir или flash-tl-image, не допускается
+   использование параметров `qspi1` и `--voltage18`. Такой запрос вернет ошибку.
 
 .. important:: Для загрузки в режиме BootROM RISC0/QSPI0 необходимо установить переключатели
    в положение указанное ниже и нажать кнопку *Reset*:

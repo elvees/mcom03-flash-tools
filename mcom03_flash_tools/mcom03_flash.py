@@ -291,7 +291,6 @@ def main() -> int:
     )
     parser_flash_tl_dir.add_argument(
         "tl_images_dir",
-        type=str,
         help="Path where to search tl images",
     )
     parser_flash_tl_dir.add_argument(
@@ -303,8 +302,16 @@ def main() -> int:
     )
     parser_flash_tl_image.add_argument(
         "tl_image",
-        type=str,
         help="Path to tar package with tl images",
+    )
+    parser_flash_tl_image.add_argument(
+        "--profile",
+        help="The profile of a package description to be used",
+    )
+    parser_flash_tl_image.add_argument(
+        "--action",
+        default="all",
+        help="The action of a profile of a package description to be used",
     )
     parser.add_argument(
         "-p",
@@ -339,7 +346,11 @@ def main() -> int:
     if args.command is None:
         print("Command is not specified")
         return 1
-    elif args.command == "flash-tl":
+    elif (
+        args.command == "flash-tl"
+        or args.command == "flash-tl-dir"
+        or args.command == "flash-tl-image"
+    ):
         if args.qspi != "qspi0":
             print("Unsupported QSPI controller")
             return 1
@@ -402,6 +413,49 @@ def main() -> int:
 
         return member.size, file
 
+    def parse_package(toml_dict: dict):
+        profiles = toml_dict["profile"]
+        args_profile = args.profile
+        args_action = args.action
+        if not args_profile:
+            args_profile = list(profiles.keys())[0]
+        elif args_profile not in profiles.keys():
+            print(f"There is no profile '{args_profile}' in the package description")
+            sys.exit(1)
+        if args_action == "all":
+            profile = profiles[args_profile]
+        else:
+            if args_action not in profiles[args_profile].keys():
+                print(f"There is no action '{args_action}' in the profile '{args_profile}'")
+                sys.exit(1)
+            profile = dict({args_action: profiles[args_profile][args_action]})
+        for action, properties in profile.items():
+            print(f"Run '{args_profile}::{action}' action:")
+            is_negative = properties.get("negative_offset", False)
+            offset = properties.get("offset", 0)
+            if is_negative:
+                offset = flash_type.size - offset
+            desc = properties.get("description")
+            command = properties.get("command")
+            if command == "flash":
+                name = properties.get("name", None)
+                if name is None:
+                    print("  The file name isn't provided in the profile")
+                    sys.exit(1)
+                size, file = get_file_from_tar(tar, name)
+                if file is None:
+                    print(f"  There is no file '{name}' in {args.tl_image}")
+                    sys.exit(1)
+                print(f"  Description: {desc}\n  Offset: {hex(offset)}\n  Image: {name}")
+                cmd_flash_file(uart, offset, file, size, args.hide_progress_bar, flash_type)
+            elif command == "erase":
+                size = properties.get("size")
+                print(f"  Description: {desc}\n  Offset: {hex(offset)}")
+                cmd_erase(uart, offset, size, args.hide_progress_bar, flash_type)
+            else:
+                print(f"  Unsupported command '{command}' is provided in the profile")
+                sys.exit(1)
+
     if args.command == "flash":
         cmd_flash(uart, args.image, args.offset, args.hide_progress_bar, flash_type)
     elif args.command == "read":
@@ -433,42 +487,16 @@ def main() -> int:
         with tarfile.open(args.tl_image, "r") as tar:
             _, package_toml = get_file_from_tar(tar, "package.toml")
             if package_toml is None:
-                print(f"There is no 'package.json' file in {args.tl_image}")
+                print(f"There is no 'package.toml' file in {args.tl_image}")
                 return 1
             toml_dict = tomli.load(package_toml)
             supported_version = "0.0.1"
-            provided_version = toml_dict["info"]["format_version"]
-            if provided_version == supported_version:
-                for scenario, properties in toml_dict["profile"]["initial"].items():
-                    print(f"Run initial profile scenario '{scenario}':")
-                    negative_offset = properties.get("negative_offset", False)
-                    offset = properties.get("offset", 0)
-                    if negative_offset:
-                        offset = flash_type.size - offset
-                    desc = properties.get("description")
-                    command = properties.get("command")
-                    if command == "flash":
-                        name = properties.get("name")
-                        if name is None:
-                            print("  The file name isn't provided in the scenario")
-                            return 1
-                        size, file = get_file_from_tar(tar, name)
-                        if file is None:
-                            print(f"  There is no file '{name}' in {args.tl_image}")
-                            return 1
-                        print(f"  Description: {desc}\n  Offset: {hex(offset)}\n  Image: {name}")
-                        cmd_flash_file(uart, offset, file, size, args.hide_progress_bar, flash_type)
-                    elif command == "erase":
-                        size = properties.get("size")
-                        print(f"  Description: {desc}\n  Offset: {hex(offset)}")
-                        cmd_erase(uart, offset, size, args.hide_progress_bar, flash_type)
-                    else:
-                        print(f"  Unsupported command '{command}' is provided in the scenario")
-                        return 1
-            else:
-                print(f"Unsupported version ({provided_version}) of the description is provided")
+            version = toml_dict.get("info", {}).get("format_version", None)
+            if version != supported_version:
+                print(f"Unsupported version ({version}) of the package description is provided")
                 print(f"The supported version is {supported_version}")
                 return 1
+            parse_package(toml_dict)
     else:
         print("Unknown command")
         return 1
