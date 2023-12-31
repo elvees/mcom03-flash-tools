@@ -1,0 +1,15 @@
+extends: default
+rules:
+  comments-indentation:
+    level: error
+  comments:
+    level: error
+  line-length:
+    max: 100
+    # practice beats purity (flake8 by default allows long URL)
+    allow-non-breakable-inline-mappings: true
+  document-start:
+    present: false
+    level: error
+  truthy:
+    level: error
