@@ -40,3 +40,7 @@ repos:
     rev: v6.2.0
     hooks:
       - id: rstcheck
+  - repo: https://review.elvees.com/pre-commit-hooks
+    rev: 53a24a4dec9736b5e4a625e75c3172299357cc22
+    hooks:
+      - id: check-copyright
