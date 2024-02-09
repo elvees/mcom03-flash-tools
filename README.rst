@@ -18,7 +18,8 @@
 * ELV-SMARC-CB r1.0 с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0);
 * ELV-SMARC-CB r2.9.1 с установленным ELV-MC03-SMARC r2.2 (QSPI0);
 * ELV-SMARC-CB r2.10.3 с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0);
-* ELV-MC03-CB r1.1.0 с установленным ELV-MC03 r1.2, r2.2 (QSPI0).
+* ELV-MC03-CB r1.1.0 с установленным ELV-MC03 r1.2, r2.2 (QSPI0);
+* MONO-BOARD r1.1.1 (QSPI0).
 
 Прошивка выполняется по интерфейсу UART0: MCom-03 BootROM в режиме загрузки по UART принимает
 образ spi-flasher, spi-flasher запускается на RISC0, повышает частоты, принимает образы для прошивки
@@ -78,6 +79,7 @@ QSPI1 утилита настраивает режим 3.3 В. Для QSPI0 да
    * на модуле ELV-SMARC-CB r1.0 (*BOOT SOURCE: 1, 2, 3*): ON, OFF, OFF
    * на модуле ELV-SMARC-CB r2.9, r2.10.3 (*BTSL2,1,0*): ON, OFF, OFF
    * на модуле ELV-MC03-CB (*BOOT2,1,0*): OFF, ON, ON
+   * на модуле MONO-BOARD r1.1.1 (*BOOT_SEL3,2,1*): ON, OFF, OFF
 
 #. Подключить кабель USB для UART-консоли модуля.
 
@@ -112,6 +114,7 @@ QSPI1 утилита настраивает режим 3.3 В. Для QSPI0 да
    * на модуле ELV-SMARC-CB r1.0 (*BOOT SOURCE: 1, 2, 3*): ON, ON, ON
    * на модуле ELV-SMARC-CB r2.9, r2.10.3 (*BTSL2,1,0*): ON, ON, ON
    * на модуле ELV-MC03-CB (*BOOT2,1,0*): OFF, OFF, OFF
+   * на модуле MONO-BOARD r1.1.1 (*BOOT_SEL3,2,1*): ON, ON, ON
 
 Чтение QSPI0
 ============
