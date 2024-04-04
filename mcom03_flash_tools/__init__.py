@@ -12,6 +12,7 @@ FlashType = namedtuple("FlashType", "name size sector page id_bytes")
 KiB = 1024
 MiB = 1024 * KiB
 FLASH_LIST = [
+    FlashType("FM25W128", 16 * MiB, 64 * KiB, 256, [0xA1, 0x28, 0x18]),
     FlashType("M25P32", 4 * MiB, 64 * KiB, 256, [0x20, 0x20, 0x16, 0x10]),
     FlashType("S25FL128S", 16 * MiB, 64 * KiB, 256, [0x1, 0x20, 0x18, 0x4D, 0x1, 0x80]),
     FlashType(
