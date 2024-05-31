@@ -21,6 +21,7 @@ setuptools.setup(
     entry_points={
         "console_scripts": [
             "mcom03-flash = mcom03_flash_tools.mcom03_flash:main",
+            "mcom03-eeprom = mcom03_flash_tools.mcom03_eeprom:main",
         ],
     },
 )

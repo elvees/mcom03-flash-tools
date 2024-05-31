@@ -13,11 +13,11 @@
 
 * MCom-03 BuB r1.3.0, r1.5.0 (QSPI0, QSPI1);
 * NGFW-CB r1.0 с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0);
-* Congatec сonga-SEVAL с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0);
 * ROCK Pi N10 с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0);
 * ELV-SMARC-CB r1.0 с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0);
 * ELV-SMARC-CB r2.9.1 с установленным ELV-MC03-SMARC r2.2 (QSPI0);
-* ELV-SMARC-CB r2.10.3 с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0);
+* ELV-SMARC-CB r2.10 с установленным ELV-MC03-SMARC r1.0, r1.1 (QSPI0);
+* ELV-SMARC-CB r2.10.3 с установленным ELV-MC03-SMARC r1.0, r1.1, r2.6.1 (QSPI0);
 * ELV-SMARC-CB r3.1.0 с установленным ELV-MC03-SMARC r1.0, r1.1, r2.6.1 (QSPI0);
 * ELV-SMARC-CB r3.2.1 с установленным ELV-MC03-SMARC r1.0, r1.1, r2.7.1 (QSPI0);
 * ELV-MC03-CB r1.1.0 с установленным ELV-MC03 r1.2, r2.2 (QSPI0);
@@ -25,7 +25,7 @@
 
 Прошивка выполняется по интерфейсу UART0: MCom-03 BootROM в режиме загрузки по UART принимает
 образ spi-flasher, spi-flasher запускается на RISC0, повышает частоты, принимает образы для прошивки
-по UART, прошивает соответствующую память QSPI.
+по UART, прошивает соответствующую память QSPI и EEPROM.
 
 Установка
 =========
@@ -69,8 +69,8 @@ QSPI1 утилита настраивает режим 3.3 В. Для QSPI0 да
 .. important:: Параметр ``--voltage18`` следует указывать для всех команд обращения к памяти
    (``flash``, ``read``, ``erase``).
 
-Прошивка QSPI0
-==============
+Подготовка модуля
+=================
 
 #. Установить переключатели в режим загрузки с UART:
 
@@ -90,6 +90,9 @@ QSPI1 утилита настраивает режим 3.3 В. Для QSPI0 да
    Для модуля NGFW-CB необходимо дополнительно нажать кнопку *Power*.
 
 #. Если на ПК открыто приложение использующее UART (``minicom``), то приложение необходимо закрыть.
+
+Прошивка QSPI0
+==============
 
 #. Запустить::
 
@@ -143,3 +146,46 @@ QSPI1 утилита настраивает режим 3.3 В. Для QSPI0 да
   mcom03-flash --port /dev/ttyUSBx erase qspi0 1M
 
 .. important: Размер очищаемой памяти будет округлён вверх и будет кратен размеру блоку стирания.
+
+Запись данных в I2C ID EERPOM
+=============================
+
+Согласно SMARC HW Specification Version 2.1, I2C ID EEPROM должна быть совместима с Atmel 24C32
+и использовать I2C адрес 0x57.
+
+Для записи данных в EEPROM используется команда write утилиты mcom03-eeprom::
+
+  mcom03-eeprom write <string>
+
+Для выбора шины I2C предусмотрена опция ``-b``. Команда с выбором шины::
+
+  mcom03-eeprom -b 0 write <string>
+
+Информация о других флагах (выбор адреса I2C, регистра и т. д.) доступна в справке утилиты::
+
+  mcom03-eeprom --help
+
+Перечень значений для прошивки в ID EEPROM носителей SMARC приведён в таблице:
+
+.. csv-table::
+   :header-rows: 1
+   :delim: ;
+
+   Плата-носитель                   ; Имя платы для прошивки
+   NGFW-CB r1.0                     ; ngfwcb-r1.0
+   ELV-SMARC-CB r1.0                ; elvsmarccb-r1.0
+   ELV-SMARC-CB r2.9.1              ; elvsmarccb-r2.9
+   ELV-SMARC-CB r2.10               ; elvsmarccb-r2.10
+   ELV-SMARC-CB r2.10.3             ; elvsmarccb-r2.10.3
+   ELV-SMARC-CB r3.1.0              ; elvsmarccb-r3.1.0
+   ELV-SMARC-CB r3.2.1              ; elvsmarccb-r3.2.1
+
+Для носителей, не указанных в таблице, прошивка ID EEPROM не требуется.
+
+Чтение данных из I2C ID EEPROM
+==============================
+
+Для чтения содержимого EEPROM используется команда read утилиты mcom03-eeprom. Утилита читает
+и выводит в виде строки указанное с ключом ``-d`` количество байтов, записанных в EEPROM::
+
+  mcom03-eeprom -d 128 read
