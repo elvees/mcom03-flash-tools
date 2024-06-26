@@ -13,7 +13,10 @@ import tarfile
 import time
 from typing import Any, Tuple
 
-import tomli
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python < 3.11
+    import tomli as tomllib  # type: ignore
 
 from mcom03_flash_tools import (
     UART,
@@ -489,7 +492,7 @@ def main() -> int:
             if package_toml is None:
                 print(f"There is no 'package.toml' file in {args.tl_image}")
                 return 1
-            toml_dict = tomli.load(package_toml)
+            toml_dict = tomllib.load(package_toml)
             supported_version = "0.0.1"
             version = toml_dict.get("info", {}).get("format_version", None)
             if version != supported_version:

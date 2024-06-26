@@ -4,7 +4,7 @@ import setuptools
 
 install_requires = [
     "pyserial>=3.0,<4.0",
-    "tomli==2.0.1",
+    "tomli==2.0.1; python_version<'3.11'",
 ]
 
 setuptools.setup(
