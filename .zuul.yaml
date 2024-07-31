@@ -2,9 +2,14 @@
     check:
       jobs:
         - mcom03-linux510-fast-tests:
-            files: &observered_files
+            files: &observed_files
               - .*\.py$
-              - mcom03_flash_tools/.*
+              - mcom03_flash_tools/
+              - pyproject.toml$
         - mcom03-linux510-priv-tl-fast-tests:
-            files: *observered_files
+            files: *observed_files
+        - mcom03-tests-tox:
+            files: *observed_files
+        - ecam-fct-tox:
+            files: *observed_files
         - tox
