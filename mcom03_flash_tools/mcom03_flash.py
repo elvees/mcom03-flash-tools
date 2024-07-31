@@ -22,7 +22,6 @@ from mcom03_flash_tools import (
     UART,
     __version__,
     clear_progress_bar,
-    default_flasher,
     get_flash_type,
     print_progress_bar,
     read_image,
@@ -334,8 +333,10 @@ def main() -> int:
     parser.add_argument(
         "-f",
         "--flasher",
-        default=default_flasher,
-        help="path to Intel HEX baremetal application to be executed on RISC0",
+        help=(
+            "path to Intel HEX baremetal application to be executed on RISC0"
+            "(use HEX distributed with the tool if not specified)"
+        ),
     )
     parser.add_argument("--version", action="version", version=__version__)
 

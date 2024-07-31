@@ -1,10 +1,12 @@
 # Copyright 2021 RnD Center "ELVEES", JSC
 
+import importlib.metadata
+import importlib.resources
 import sys
 import time
 from collections import namedtuple
+from typing import Optional
 
-import pkg_resources
 import serial
 
 FlashType = namedtuple("FlashType", "name size sector page id_bytes")
@@ -26,11 +28,11 @@ FLASH_LIST = [
     FlashType("W25Q128JV-IM/JM", 16 * MiB, 64 * KiB, 256, [0xEF, 0x70, 0x18]),
     FlashType("W25Q128FW", 16 * MiB, 64 * KiB, 256, [0xEF, 0x60, 0x18]),
 ]
-default_flasher = pkg_resources.resource_filename("mcom03_flash_tools", "spi-flasher-mips-ram.hex")
+
 
 try:
-    __version__ = pkg_resources.get_distribution(__name__).version
-except pkg_resources.DistributionNotFound:
+    __version__ = importlib.metadata.version(__package__)
+except importlib.metadata.PackageNotFoundError:
     # package is not installed
     __version__ = ""
 
@@ -165,7 +167,7 @@ def read_image(uart: UART, offset: int, size: int, fname: str, hide_progress_bar
         clear_progress_bar()
 
 
-def upload_flasher(uart: UART, flasher: str):
+def upload_flasher(uart: UART, flasher: Optional[str] = None):
     """Communicate with BootROM to upload"""
     QSPI_FLASHER = "QSPI Flasher"
 
@@ -179,9 +181,14 @@ def upload_flasher(uart: UART, flasher: str):
         return
 
     print("Sending flasher...")
-    with open(flasher, "rb") as f:
-        # BootROM doesn't have command, just send ihex file
-        uart.tty.write(f.read())
+    if flasher is None:
+        ref = importlib.resources.files(__package__) / "spi-flasher-mips-ram.hex"
+        with ref.open("rb") as file_:
+            # BootROM doesn't have command, just send ihex file
+            uart.tty.write(file_.read())
+    else:
+        with open(flasher, "rb") as file_:
+            uart.tty.write(file_.read())
 
     # BUG: After uploading ihex file BootROM sends prompt twice
     uart.wait_for_string(uart.prompt, timeout=1)
