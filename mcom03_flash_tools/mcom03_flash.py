@@ -413,7 +413,7 @@ def main() -> int:
 
         return member.size, file
 
-    def parse_package(toml_dict: dict):
+    def parse_package(tar: tarfile.TarFile, toml_dict: dict):
         profiles = toml_dict["profile"]
         args_profile = args.profile
         args_action = args.action
@@ -496,7 +496,7 @@ def main() -> int:
                 print(f"Unsupported version ({version}) of the package description is provided")
                 print(f"The supported version is {supported_version}")
                 return 1
-            parse_package(toml_dict)
+            parse_package(tar, toml_dict)
     else:
         print("Unknown command")
         return 1
