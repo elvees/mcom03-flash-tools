@@ -1,12 +1,12 @@
 - project:
     check:
       jobs:
-        - mcom03-linux510-fast-tests:
+        - mcom03-linux-fast-tests:
             files: &observed_files
               - .*\.py$
               - mcom03_flash_tools/
               - pyproject.toml$
-        - mcom03-linux510-priv-tl-fast-tests:
+        - mcom03-linux66-priv-tl-fast-tests:
             files: *observed_files
         - mcom03-tests-tox:
             files: *observed_files
