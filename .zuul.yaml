@@ -6,7 +6,7 @@
               - .*\.py$
               - mcom03_flash_tools/
               - pyproject.toml$
-        - mcom03-linux66-priv-tl-fast-tests:
+        - mcom03-linux66-bootromqspi0-fast-tests:
             files: *observed_files
         - mcom03-tests-tox:
             files: *observed_files
