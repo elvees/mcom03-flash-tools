@@ -169,22 +169,23 @@ def read_image(uart: UART, offset: int, size: int, fname: str, hide_progress_bar
         clear_progress_bar()
 
 
-def upload_flasher(uart: UART, flasher: Optional[str] = None):
+def upload_flasher(
+    uart: UART, default_flasher_name: str, flasher_msg: str, flasher: Optional[str] = None
+):
     """Communicate with BootROM to upload"""
-    QSPI_FLASHER = "QSPI Flasher"
 
-    # recognize if flasher is already executing. Upload only if BootROM terminal
-    # is found
+    print("Uploading flasher to on-chip RAM...")
+
+    # recognize if flasher is already executing. Upload only if BootROM terminal is found
     response = uart.run("")
     if response is None:
         raise RuntimeError("BootROM UART terminal prompt not found")
-    if QSPI_FLASHER in response:
+    if flasher_msg in response:
         print("Flasher is already executing")
         return
 
-    print("Sending flasher...")
     if flasher is None:
-        ref = importlib.resources.files(__package__) / "spi-flasher-mips-ram.hex"
+        ref = importlib.resources.files(__package__) / default_flasher_name
         with ref.open("rb") as file_:
             # BootROM doesn't have command, just send ihex file
             uart.tty.write(file_.read())
@@ -197,8 +198,8 @@ def upload_flasher(uart: UART, flasher: Optional[str] = None):
     uart.wait_for_string(uart.prompt, timeout=1)
 
     response = uart.run("run")  # BootROM command to execute flasher
-    if response is None or QSPI_FLASHER not in response:
-        raise Exception(f"{QSPI_FLASHER} does not respond, response {response}")
+    if response is None or flasher_msg not in response:
+        raise Exception(f"{flasher_msg} does not respond, response {response}")
 
     time.sleep(0.1)  # Delay for flasher startup
 

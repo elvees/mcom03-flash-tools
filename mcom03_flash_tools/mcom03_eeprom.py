@@ -111,8 +111,7 @@ def main() -> int:
         return 1
 
     uart = UART(prompt="#", port=args.port, baudrate=115200, verbose=args.verbose)
-    print("Uploading flasher to on-chip RAM...")
-    upload_flasher(uart, args.flasher)
+    upload_flasher(uart, "spi-flasher-mips-ram.hex", "QSPI Flasher", args.flasher)
 
     if args.command == "flasher":
         return 0
