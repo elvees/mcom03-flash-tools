@@ -19,6 +19,7 @@ dependencies = [
 [project.scripts]
 mcom03-flash = "mcom03_flash_tools.mcom03_flash:main"
 mcom03-eeprom = "mcom03_flash_tools.mcom03_eeprom:main"
+mcom03-otp = "mcom03_flash_tools.mcom03_otp:main"
 
 [tool.setuptools]
 packages = ["mcom03_flash_tools"]
