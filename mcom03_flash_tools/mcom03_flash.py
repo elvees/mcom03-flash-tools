@@ -130,6 +130,8 @@ def cmd_flash_file(
     hide_progress_bar: bool,
     flash_type,
 ):
+    if offset < 0:
+        offset = flash_type.size + offset
     limit = offset + f_size
     if limit > flash_type.size:
         print("Image doesn't fit to flash memory", file=sys.stderr)
@@ -160,6 +162,8 @@ def cmd_flash(uart: UART, image: str, offset: int, hide_progress_bar: bool, flas
 
 
 def cmd_read(uart: UART, fname: str, offset: int, size: int, hide_progress_bar: bool, flash_type):
+    if offset < 0:
+        offset = flash_type.size + offset
     read_size = size if size is not None else flash_type.size - offset
     limit = offset + read_size
     if limit > flash_type.size:
@@ -174,6 +178,8 @@ def cmd_read(uart: UART, fname: str, offset: int, size: int, hide_progress_bar: 
 
 
 def cmd_erase(uart: UART, offset: int, size: int, hide_progress_bar: bool, flash_type):
+    if offset < 0:
+        offset = flash_type.size + offset
     erase_size = size if size is not None else flash_type.size - offset
     limit = offset + erase_size
     if limit > flash_type.size:
@@ -214,6 +220,8 @@ def int_size(size):
     >>> int_size('1kB') == int_size('1kb') == 1000
     True
     >>> int_size('1MB') == int_size('1mb') == 1_000_000
+    True
+    >>> int_size('-1K') == int_size('-1K') == int_size('-0x400') == -1024
     True
     """
     units = {"K": 1024, "M": 1024 * 1024, "kB": 1000, "MB": 1000 * 1000}
@@ -293,7 +301,8 @@ def main() -> int:
             "--offset",
             type=int_size,
             default=0,
-            help="Process data starting from OFFSET bytes (e.g. 0x100, 1024, 128K)",
+            help="Process data starting from OFFSET bytes (e.g. 0x100, 1024, 128K)."
+            + "Offset can be negative. In the case it is treated as offset from the end",
         )
     parser_flash_tl.add_argument(
         "bootrom_sbimg",
@@ -459,7 +468,7 @@ def main() -> int:
             is_negative = properties.get("negative_offset", False)
             offset = properties.get("offset", 0)
             if is_negative:
-                offset = flash_type.size - offset
+                offset = -offset
             desc = properties.get("description")
             command = properties.get("command")
             if command == "flash":
