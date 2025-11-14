@@ -186,6 +186,25 @@ def cmd_erase(uart: UART, offset: int, size: int, hide_progress_bar: bool, flash
     print(f"Erase: {duration_erase:0.1f} s ({erase_size/duration_erase/1024:0.0f} KiB/s)")
 
 
+def change_baudrate(uart: UART, baudrate: int):
+    response = uart.run(f"baudrate {baudrate}")
+    if "Error" in response:
+        raise Exception(response)
+
+    uart.tty.baudrate = baudrate
+    ok, _ = uart.wait_for_string(uart.prompt, timeout=1)
+    if not ok:
+        # Flasher will change baudrate and output command line prompt immediately.
+        # We need to recheck command line if host took too long to adjust speed and missed
+        # previous prompt.
+        response = uart.run("")
+        if response is None:
+            raise Exception("Failed to change baudrate")
+
+    # Try to wait for prompt for case if early when changing speed was received broken symbol '#'
+    uart.wait_for_string(uart.prompt, timeout=0.1)
+
+
 def int_size(size):
     """
     >>> int_size('1K') == int_size('1k') == int_size('0x400') == 1024
@@ -321,6 +340,7 @@ def main() -> int:
         default="/dev/ttyUSB0",
         help="serial port on host the device UART0 is connected to",
     )
+    parser.add_argument("-b", "--baudrate", type=int, default=115200, help="specify UART baudrate")
     parser.add_argument("-v", "--verbose", action="store_true", help="show UART traffic")
     parser.add_argument(
         "--hide-progress-bar",
@@ -367,7 +387,10 @@ def main() -> int:
 
     print("Uploading flasher to on-chip RAM...")
     upload_flasher(uart, args.flasher)
+    if args.baudrate != 115200:
+        change_baudrate(uart, args.baudrate)
 
+    print(f"UART baudrate: {args.baudrate}")
     response = uart.run(f"qspi {args.qspi[-1:]} {int(args.voltage18)}")
     if response is None or "Selected" not in response:
         raise Exception(f"Failed to select QSPI controller: {response}")
@@ -509,6 +532,9 @@ def main() -> int:
         # The tl software uses 2 pages to store its non-volatile settings at 0xC10000 offset.
         # They have to be cleaned after flashing new tl images.
         cmd_erase(uart, 0xC10000, int_size("128K"), args.hide_progress_bar, flash_type)
+
+    if args.baudrate != 115200:
+        change_baudrate(uart, 115200)
 
     return 0
 

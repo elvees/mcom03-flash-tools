@@ -97,7 +97,7 @@ class UART(object):
             ch = self.tty.read(1)
             if not ch:
                 continue
-            resp += ch.decode("utf-8")
+            resp += ch.decode("utf-8", errors="ignore")
 
         result = resp.replace("\r", "")
         if self.verbose and result:
