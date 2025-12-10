@@ -50,7 +50,7 @@ class UART(object):
         port : str
             serial port for use (example: /dev/ttyUSB0)
         newline : str
-            new line delimeter
+            new line delimiter
         verbose : bool
             if True then will show UART transactions
         baudrate : int

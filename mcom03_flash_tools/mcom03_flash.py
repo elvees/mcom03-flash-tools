@@ -233,7 +233,7 @@ Tool algorithm:
 * repeat previous step multiple time till whole image is flashed to SPI
 
 Intel HEX file baremetal SPI flasher to be executed on RISC0 is embedded with the tool.
-Size options (including --offset) can be in hexidecimal (0x) and decimal format. Decimals may be
+Size options (including --offset) can be in hexadecimal (0x) and decimal format. Decimals may be
 followed by the multiplicative  suffixes (similar to dd utility): kB=1000, K=1024, MB=1000*1000,
 M=1024*1024, binary prefixes can be used, too: KiB=K, MiB=M, and so on.
 """
@@ -380,7 +380,7 @@ def main() -> int:
             return 1
 
     if args.qspi == "qspi0" and args.voltage18:
-        print("Unsupported QSPI0 setings: --voltage18 is forbidden")
+        print("Unsupported QSPI0 settings: --voltage18 is forbidden")
         return 1
 
     uart = UART(prompt="#", port=args.port, baudrate=115200, verbose=args.verbose)
