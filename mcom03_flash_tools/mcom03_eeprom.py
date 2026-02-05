@@ -119,7 +119,9 @@ def main() -> int:
     uart.run(f"i2c_dev {args.bus} {args.speed}")
 
     if args.command == "read":
-        response = uart.run(f"i2c_read {args.addr} {args.regaddr} {args.length} {args.datasize}")
+        response = uart.run(
+            f"i2c_read {args.addr} {args.regaddr} {args.length} {args.datasize} {args.mode}"
+        )
         print(response)
 
     if args.command == "write":
