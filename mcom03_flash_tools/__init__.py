@@ -1,5 +1,6 @@
 # Copyright 2021 RnD Center "ELVEES", JSC
 
+import abc
 import importlib.metadata
 import importlib.resources
 import sys
@@ -232,3 +233,164 @@ def get_flash_type(uart: UART, flash_size: int, flash_sector: int, flash_page: i
             flash = FlashType._make([name] + params + [flash.id_bytes])  # type: ignore
 
     return flash
+
+
+def _check_int_type(*args):
+    for arg in args:
+        if not isinstance(arg, int):
+            raise TypeError("Only int is supported")
+
+
+def _swap_bit_range(range_):
+    if range_[1] > range_[0]:
+        range_ = [range_[1], range_[0]]
+    return range_
+
+
+def BIT(n):
+    return 1 << n
+
+
+def GENMASK(bit_range):
+    _check_int_type(bit_range[0], bit_range[1])
+    bit_range = _swap_bit_range(bit_range)
+    return (BIT(bit_range[0] - bit_range[1] + 1) - 1) << bit_range[1]
+
+
+def FIELD_GET(mask, reg):
+    """
+    >>> FIELD_GET(0b111, 0b10111)
+    7
+    >>> FIELD_GET(0b100, 0b10111)
+    1
+    >>> FIELD_GET(0b10100, 0b10111)
+    5
+    """
+
+    def __bf_shf(mask):
+        if mask == 0:
+            return 0
+        s = bin(mask)
+        return len(s) - len(s.rstrip("0"))
+
+    _check_int_type(mask, reg)
+    return (mask & reg) >> __bf_shf(mask)
+
+
+# TODO: Support OTP protection
+class Protector(abc.ABC):
+    # Commands
+    WRR = 0x01
+    WRDI = 0x04
+    RDSR1 = 0x05
+    WREN = 0x06
+
+    def __init__(self, uart: UART):
+        self._uart = uart
+
+    @staticmethod
+    def _hex(d):
+        s = hex(d)[2:]
+        return f"0x{s}" if len(s) % 2 == 0 else f"0x0{s}"
+
+    def _wait_complete(self, timeout):
+        time_ = time.monotonic()
+        while time.monotonic() - time_ < timeout:
+            # Wait until WIP = 0 - device in standby mode
+            if FIELD_GET(BIT(0), self._custom(self.RDSR1, 1)) == 0:
+                return True
+        return False
+
+    def _custom(self, tx_data, rx_data_len):
+        tx_data = self._hex(tx_data)
+        cmd = f"custom {tx_data} {rx_data_len}"
+        ret = self._uart.run(cmd)
+        return int(ret, base=16) if rx_data_len else 0
+
+    @abc.abstractmethod
+    def unprotect(self):
+        """Unprotect entire QSPI flash"""
+        pass
+
+    @abc.abstractmethod
+    def protect(self):
+        """Protect entire QSPI flash"""
+        pass
+
+    @property
+    @abc.abstractmethod
+    def is_protected(self) -> bool:
+        pass
+
+
+class ProtectorS25FL128S(Protector):
+    """
+    Bit protection in a nutshell (there are not all features, e.g., we don't use OTP - separate 1024
+    byte one-time programmable section - section 10.1):
+
+    * The chip has a block protection function. Data is split into 8 sectors; we can protect some
+      part of the data or the entire memory. Bits BP[2:0] in Status Register 1 display which sectors
+      are protected.
+    * Configuration Register 1, bit BPNV (Bit Protection Non-Volatile), defines whether or not the
+      BP[2:0] are volatile or non-volatile. The bit is one-time programmable, default value is 0 -
+      When BPNV is set to a 0 the BP[2:0] bits are non-volatile.
+    * The chip has WP# pin. When WP# is LOW and SRWD (Status Register Write Disable in the Status
+      Register 1) is set to 1, the Status and Configuration register is protected from alteration.
+      This mode is called as hardware protection.
+
+    The class implements approaches to protect/unprotect memory over BP[2:0] bits.
+    * If BPNV=0 then BP state will be retained after memory reset or power cycle, because BP[2:0]
+      are non-volatile.
+    * If BPNV=1 then BP state will be reset to 0b111 value (all sectors are protected) after memory
+      reset or power cycle. Until these actions BP will be preserve its state, in other words,
+      you can unprotect memory until reset or power cycle for example.
+
+    The class will be useless for cases when WP# is LOW, in other words, hardware protection isn't
+    supported.
+    """
+
+    BP_MASK = GENMASK([4, 2])
+    WEL = BIT(1)
+
+    POLL_TIMEOUT = 1
+
+    def protect(self):
+        rdsr = self._custom(self.RDSR1, 1)
+        self._custom(self.WREN, 0)
+        self._custom((self.WRR << 8) | self.BP_MASK | (rdsr & ~self.WEL), 0)
+
+        if not self._wait_complete(self.POLL_TIMEOUT):
+            raise RuntimeError("Write still in progress")
+        rdsr = self._custom(self.RDSR1, 1)
+        if rdsr & self.BP_MASK != self.BP_MASK:
+            raise RuntimeError(f"Failed to protect flash: SR1 = {hex(rdsr)}")
+
+    def unprotect(self):
+        self._custom(self.WREN, 0)
+        self._custom((self.WRR << 8), 0)
+
+        if not self._wait_complete(self.POLL_TIMEOUT):
+            raise RuntimeError("Write still in progress")
+        rdsr = self._custom(self.RDSR1, 1)
+        if rdsr & self.BP_MASK:
+            raise RuntimeError(f"Failed to unprotect flash: SR1 = {hex(rdsr)}")
+
+    @property
+    def is_protected(self) -> bool:
+        ret = self._custom(self.RDSR1, 1)
+        return bool(FIELD_GET(self.BP_MASK, ret))
+
+
+def get_flash_protector(flash_type: FlashType, uart: UART):
+    if flash_type is None:
+        raise RuntimeError("Flash type is required")
+
+    TYPE2CLS = {
+        "S25FL128S": ProtectorS25FL128S,
+        "S25FL128S(sector:256K)": ProtectorS25FL128S,
+        "S25FL256S": ProtectorS25FL128S,
+    }
+    cls = TYPE2CLS.get(flash_type.name)
+    if cls is None:
+        raise RuntimeError(f"Protection operations aren't supported for {flash_type}")
+    return cls(uart)

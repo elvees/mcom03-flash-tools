@@ -22,6 +22,7 @@ from mcom03_flash_tools import (
     UART,
     __version__,
     clear_progress_bar,
+    get_flash_protector,
     get_flash_type,
     print_progress_bar,
     read_image,
@@ -273,6 +274,11 @@ def main() -> int:
     )
     parser_read = subparsers.add_parser("read", help="Read data from QSPI")
     parser_erase = subparsers.add_parser("erase", help="Erase data on QSPI")
+    parser_protect = subparsers.add_parser("protect", help="Protect QSPI from writing/erasing")
+    parser_unprotect = subparsers.add_parser(
+        "unprotect", help="Remove QSPI protection from writing/erasing"
+    )
+
     for p in [
         parser_flash,
         parser_flash_tl,
@@ -280,6 +286,8 @@ def main() -> int:
         parser_flash_tl_image,
         parser_read,
         parser_erase,
+        parser_protect,
+        parser_unprotect,
     ]:
         p.add_argument("qspi", choices=["qspi0", "qspi1"], help="QSPI controller to use")
         p.add_argument(
@@ -496,6 +504,20 @@ def main() -> int:
         cmd_read(uart, args.fname, args.offset, args.size, args.hide_progress_bar, flash_type)
     elif args.command == "erase":
         cmd_erase(uart, args.offset, args.size, args.hide_progress_bar, flash_type)
+    elif args.command == "protect":
+        protector = get_flash_protector(flash_type, uart)
+        if protector.is_protected:
+            print("Flash is protected already")
+        else:
+            protector.protect()
+            print("Flash is protected successfully")
+    elif args.command == "unprotect":
+        protector = get_flash_protector(flash_type, uart)
+        if protector.is_protected:
+            protector.unprotect()
+            print("Flash is unprotected successfully")
+        else:
+            print("Flash is unprotected already")
     elif args.command == "flash-tl":
         flash_images(
             {0: args.bootrom_sbimg, 0x200000: args.sbl_tl_sbimg, 0xA00000: args.sbl_tl_otp}
