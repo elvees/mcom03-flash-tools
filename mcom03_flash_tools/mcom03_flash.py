@@ -96,7 +96,7 @@ def erase(uart: UART, offset: int, size: int, hide_progress_bar: bool, flash_typ
     last_sector = int(math.ceil((offset + size) / flash_type.sector)) - 1
     sectors = last_sector - first_sector + 1
     rounded_str = (
-        f", rounded to {sectors*flash_type.sector} bytes"
+        f", rounded to {sectors * flash_type.sector} bytes"
         if (sectors * flash_type.sector) != size
         else ""
     )
@@ -141,17 +141,17 @@ def cmd_flash_file(
     time_start = time.monotonic()
     erase(uart, offset, f_size, hide_progress_bar, flash_type)
     duration_erase = time.monotonic() - time_start
-    print(f"Erase: {duration_erase:0.1f} s ({f_size/duration_erase/1024:0.0f} KiB/s)")
+    print(f"Erase: {duration_erase:0.1f} s ({f_size / duration_erase / 1024:0.0f} KiB/s)")
 
-    print(f"Writing to flash {f_size/1024:.2f} KB...")
+    print(f"Writing to flash {f_size / 1024:.2f} KB...")
     flash(uart, offset, f_obj, f_size, hide_progress_bar, flash_type.page)
     duration_write = time.monotonic() - time_start - duration_erase
-    print(f"Write: {duration_write:0.1f} s ({f_size/duration_write/1024:0.0f} KiB/s)")
+    print(f"Write: {duration_write:0.1f} s ({f_size / duration_write / 1024:0.0f} KiB/s)")
 
     print("Checking...")
     verify(uart, offset, f_obj, f_size)
     duration_check = time.monotonic() - time_start - duration_erase - duration_write
-    print(f"Check: {duration_check:0.1f} s ({f_size/duration_check/1024:0.0f} KiB/s)")
+    print(f"Check: {duration_check:0.1f} s ({f_size / duration_check / 1024:0.0f} KiB/s)")
     duration_total = duration_erase + duration_write + duration_check
     print(f"Total: {duration_total:0.1f} s")
 
@@ -171,11 +171,11 @@ def cmd_read(uart: UART, fname: str, offset: int, size: int, hide_progress_bar: 
         print("Out of flash memory read requested", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Reading {read_size/1024:.2f} KiB...")
+    print(f"Reading {read_size / 1024:.2f} KiB...")
     time_start = time.monotonic()
     read_image(uart, offset, read_size, fname, hide_progress_bar)
     duration = time.monotonic() - time_start
-    print(f"Read done in {duration:0.3f} seconds ({read_size/duration/1024:0.0f} KiB/s)")
+    print(f"Read done in {duration:0.3f} seconds ({read_size / duration / 1024:0.0f} KiB/s)")
 
 
 def cmd_erase(uart: UART, offset: int, size: int, hide_progress_bar: bool, flash_type):
@@ -190,7 +190,7 @@ def cmd_erase(uart: UART, offset: int, size: int, hide_progress_bar: bool, flash
     time_start = time.monotonic()
     erase(uart, offset, erase_size, hide_progress_bar, flash_type)
     duration_erase = time.monotonic() - time_start
-    print(f"Erase: {duration_erase:0.1f} s ({erase_size/duration_erase/1024:0.0f} KiB/s)")
+    print(f"Erase: {duration_erase:0.1f} s ({erase_size / duration_erase / 1024:0.0f} KiB/s)")
 
 
 def change_baudrate(uart: UART, baudrate: int):
