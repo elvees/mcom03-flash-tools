@@ -21,6 +21,16 @@ mcom03-flash = "mcom03_flash_tools.mcom03_flash:main"
 mcom03-eeprom = "mcom03_flash_tools.mcom03_eeprom:main"
 mcom03-otp = "mcom03_flash_tools.mcom03_otp:main"
 
+[dependency-groups]
+docs = [
+    "sphinx",
+    # cap till issue is resolved https://github.com/readthedocs/sphinx_rtd_theme/issues/1624
+    "sphinx-rtd-theme < 3.0",
+    "sphinxcontrib-programoutput",
+    "sphinx-copybutton",
+]
+autobuild = ["sphinx-autobuild"]
+
 [tool.setuptools]
 packages = ["mcom03_flash_tools"]
 

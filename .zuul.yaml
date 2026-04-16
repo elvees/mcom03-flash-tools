@@ -1,9 +1,21 @@
+- job:
+    name: mcom03-flash-tools-build-docs
+    parent: build-docs
+    vars:
+      tox_envlist: docs
+      build_items:
+        - title: mcom03-flash-tools doc
+          basename: mcom03-flash-tools-docs
+          build_dir: docs/build/html
+
 - project:
     check:
       jobs: &check-jobs
+        - mcom03-flash-tools-build-docs:
+            irrelevant-files:
+              - \.
         - mcom03-linux-fast-tests:
             files: &observed_files
-              - .*\.py$
               - mcom03_flash_tools/
               - pyproject.toml$
         - mcom03-linux66-bootromqspi0-fast-tests:
@@ -15,3 +27,8 @@
         - tox
     gate:
       jobs: *check-jobs
+    post: &publish-jobs
+      jobs:
+        - mcom03-flash-tools-build-docs
+        - mcom03-flash-tools-publish-docs
+    tag: *publish-jobs
