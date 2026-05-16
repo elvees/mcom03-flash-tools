@@ -1,6 +1,6 @@
 - project:
     check:
-      jobs:
+      jobs: &check-jobs
         - mcom03-linux-fast-tests:
             files: &observed_files
               - .*\.py$
@@ -13,3 +13,5 @@
         - ecam-fct-tox:
             files: *observed_files
         - tox
+    gate:
+      jobs: *check-jobs
