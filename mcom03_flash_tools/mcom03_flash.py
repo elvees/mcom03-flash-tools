@@ -230,8 +230,7 @@ def int_size(size):
         if size.lower().endswith(unit.lower()):
             size = size[: len(size) - len(unit)]
             return int(size) * factor
-    else:
-        return int(size, 0)
+    return int(size, 0)
 
 
 __doc__ = """Tool to flash/read/erase QSPI0, QSPI1 memory connected to MCom-03 SoC (1892ВА018).

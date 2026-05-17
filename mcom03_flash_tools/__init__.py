@@ -211,8 +211,7 @@ def _get_flash_type(uart: UART):
     for flash in FLASH_LIST:
         if flash.id_bytes == ids[: len(flash.id_bytes)]:
             return flash
-    else:
-        return FlashType(None, None, None, None, ids)
+    return FlashType(None, None, None, None, ids)
 
 
 def get_flash_type(uart: UART, flash_size: int, flash_sector: int, flash_page: int):
