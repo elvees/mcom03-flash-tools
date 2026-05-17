@@ -68,7 +68,7 @@ def flash(
             uart.tty.write(data)
             success, response = uart.wait_for_string(["R", "C"])
             if not success:
-                Exception(f"Wrong response while flashing: {response}")
+                raise Exception(f"Wrong response while flashing: {response}")
 
             if response.strip() == "R":  # Ready for next block
                 break

@@ -41,4 +41,3 @@ select = [
 ]
 unfixable = ["ALL"]
 fixable = ["E", "I", "F"]
-ignore = ["PLW0133"]
