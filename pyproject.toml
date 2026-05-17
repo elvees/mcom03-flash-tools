@@ -38,6 +38,7 @@ select = [
   "F", # flake8
   "PLE", # pylint errors
   "PLW", # pylint warnings
+  "UP", # pyupgrade
 ]
 unfixable = ["ALL"]
 fixable = ["E", "I", "F"]

@@ -40,7 +40,7 @@ except importlib.metadata.PackageNotFoundError:
     __version__ = ""
 
 
-class UART(object):
+class UART:
     """Class for work with UART console."""
 
     def __init__(self, prompt, port, newline=b"\r", verbose=False, baudrate=115200, timeout=0.5):

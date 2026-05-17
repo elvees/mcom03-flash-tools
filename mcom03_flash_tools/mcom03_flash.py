@@ -11,7 +11,7 @@ import os
 import sys
 import tarfile
 import time
-from typing import Any, Tuple
+from typing import Any
 
 try:
     import tomllib
@@ -158,7 +158,7 @@ def cmd_flash_file(
 
 def cmd_flash(uart: UART, image: str, offset: int, hide_progress_bar: bool, flash_type):
     f_size = os.stat(image).st_size
-    with io.open(image, "rb") as f_obj:
+    with io.open(image, "rb") as f_obj:  # noqa: UP020 Use builtin `open`
         cmd_flash_file(uart, offset, f_obj, f_size, hide_progress_bar, flash_type)
 
 
@@ -442,7 +442,7 @@ def main() -> int:
             )
         return
 
-    def get_file_from_tar(tar: tarfile.TarFile, filename: str) -> Tuple[int, Any]:
+    def get_file_from_tar(tar: tarfile.TarFile, filename: str) -> tuple[int, Any]:
         try:
             member = tar.getmember(filename)
             file = tar.extractfile(member)
