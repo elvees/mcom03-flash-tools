@@ -749,7 +749,7 @@ def main() -> int:
         "--flasher",
         help=(
             "path to Intel HEX baremetal application to be executed on RISC0"
-            "(use HEX distributed with the tool if not specified)"
+            " (use HEX distributed with the tool if not specified)"
         ),
     )
     parser.add_argument(

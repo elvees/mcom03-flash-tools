@@ -27,7 +27,9 @@ def main() -> int:
     subparsers = parser.add_subparsers(dest="command")
 
     subparsers.add_parser("read", help="Read EEPROM")
-    subparsers.add_parser("flasher", help="Write flasher to QSPI")
+    subparsers.add_parser(
+        "flasher", help="Upload flasher to RISC0 RAM and check flasher is running"
+    )
 
     parser_write = subparsers.add_parser("write", help="Write new data to EEPROM")
     parser_write.add_argument("name", default="", help="String to write in EEPROM")
