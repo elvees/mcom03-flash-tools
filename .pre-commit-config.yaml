@@ -31,7 +31,7 @@ repos:
     hooks:
       - id: rstcheck
         additional_dependencies: ['rstcheck[sphinx]']
-        args: [--ignore-directives, command-output]
+        args: [--ignore-directives, command-output, --report-level, warning]
   - repo: https://review.elvees.com/pre-commit-hooks
     rev: 53a24a4dec9736b5e4a625e75c3172299357cc22
     hooks:

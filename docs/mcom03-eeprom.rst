@@ -4,20 +4,26 @@
 Прошивка I2C EEPROM (mcom03-eeprom)
 ===================================
 
+Утилита mcom03-eeprom предназначена для прошивки I2C ID EEPROM на carrier board SMARC-модулей.
 Согласно SMARC HW Specification Version 2.1, I2C ID EEPROM должна быть совместима с Atmel 24C32
-и использовать I2C адрес 0x57.
+и использовать I2C-адрес 0x57.
 
-Для записи данных в EEPROM используется команда write утилиты mcom03-eeprom::
+Справочник:
+
+.. command-output:: mcom03-eeprom --help
+
+.. _mcom03-eeprom-write:
+
+Запись
+======
+
+Запись строки в EEPROM::
 
   mcom03-eeprom write <string>
 
 Для выбора шины I2C предусмотрена опция ``-b``. Команда с выбором шины::
 
   mcom03-eeprom -b 0 write <string>
-
-Информация о других флагах (выбор адреса I2C, регистра и т. д.) доступна в справке утилиты::
-
-  mcom03-eeprom --help
 
 Перечень значений для прошивки в ID EEPROM носителей SMARC приведён в таблице:
 
@@ -37,10 +43,34 @@
 
 Для носителей, не указанных в таблице, прошивка ID EEPROM не требуется.
 
-Чтение данных из I2C ID EEPROM
-==============================
+Справочник:
+
+.. command-output:: mcom03-eeprom write --help
+
+.. _mcom03-eeprom-read:
+
+Чтение
+======
 
 Для чтения содержимого EEPROM используется команда read утилиты mcom03-eeprom. Утилита читает
 и выводит в виде строки указанное с ключом ``-d`` количество байтов, записанных в EEPROM::
 
   mcom03-eeprom -d 128 read
+
+Справочник:
+
+.. command-output:: mcom03-eeprom read --help
+
+.. _mcom03-eeprom-flasher:
+
+Загрузка flasher
+================
+
+Загрузить прошивальщик по UART в RISC0 CRAM и проверить, что прошивальщик ожидает команды по UART.
+Команда используется для отладки::
+
+  mcom03-eeprom flasher
+
+Справочник:
+
+.. command-output:: mcom03-eeprom flasher --help
